@@ -4,6 +4,8 @@ Marwan Ayyad's 2-hour workshop deck for NASA Space Apps Cairo 2026. 28 slides, 7
 
 ## On the day
 
+Online copy: https://marwan0.github.io/space-apps-game-design/ (repo: github.com/Marwan0/space-apps-game-design). Push to `main` to update it.
+
 Open `index.html` in Chrome or Edge. No internet and no install needed; fonts, three.js and the QR code ship in `vendor/`.
 
 | Key | Does |
@@ -54,4 +56,4 @@ Past-winner slides only state what NASA's 2024 and 2025 global-winner announceme
 - `PRODUCT.md`: audience, purpose, verified facts
 - `DESIGN.md`: the visual system (paints, lettering, boards, rules) for adding slides on-style
 - `workshop_outline.html`: original session outline
-- `_old/`: the previous deck, kept for reference
+- `_old/`: the previous deck, kept for reference (local only, not in the repo)

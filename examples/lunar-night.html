@@ -1,0 +1,127 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lunar Night</title>
+<!--
+  Example output of the deck's "Copy as AI prompt" (slide 24 / 28) with the lunar-night spec.
+  Rules built, in plain English:
+  1. Each button press is one day. The night lasts 14 days.
+  2. Every day: battery -2 kWh, heat -6 °C, oxygen -10 %.
+  3. Run heaters: heat +12 °C, battery -8 kWh.
+  4. Run oxygen recycler: oxygen +15 %, battery -8 kWh.
+  5. Battery at 0: machines are off and heat drops -10 °C per day instead of -6.
+  6. Heat below -20 °C for 3 days in a row: mission lost.
+  7. Oxygen at 0: mission lost.
+  8. Reach the end of day 14: the crew survives.
+  Teaching numbers, not real NASA data.
+-->
+<style>
+  body { margin: 0; min-height: 100vh; display: grid; place-items: center; background: #111; color: #fafaf7; font: 20px/1.4 system-ui, sans-serif; }
+  main { width: min(640px, 100% - 32px); }
+  h1 { margin: 0 0 4px; font-size: 36px; }
+  .day { margin: 0 0 20px; opacity: .8; }
+  .meter { margin: 14px 0; }
+  .meter b { display: flex; justify-content: space-between; }
+  .bar { height: 28px; background: #333; border-radius: 6px; overflow: hidden; }
+  .fill { height: 100%; transition: width .3s; }
+  .green { background: #0a7d3b; } .yellow { background: #ffd100; } .red { background: #d7261e; }
+  .buttons { display: flex; gap: 12px; margin-top: 24px; }
+  button { flex: 1; padding: 16px; font: inherit; font-weight: 700; border: 0; border-radius: 8px; cursor: pointer; }
+  #heat-btn { background: #d7261e; color: #fff; } #o2-btn { background: #1846a3; color: #fff; }
+  #log { min-height: 56px; margin-top: 16px; }
+  #end { display: none; text-align: center; padding: 32px; border-radius: 12px; margin-top: 24px; }
+  #end.win { display: block; background: #0a7d3b; } #end.lose { display: block; background: #d7261e; }
+  #restart { background: #fafaf7; color: #111; margin-top: 16px; }
+</style>
+</head>
+<body>
+<main>
+  <h1>Lunar Night</h1>
+  <p class="day" id="day"></p>
+  <div class="meter"><b><span>Battery</span><span id="b-v"></span></b><div class="bar"><div class="fill" id="b-bar"></div></div></div>
+  <div class="meter"><b><span>Heat</span><span id="heat-v"></span></b><div class="bar"><div class="fill" id="heat-bar"></div></div></div>
+  <div class="meter"><b><span>Oxygen</span><span id="o2-v"></span></b><div class="bar"><div class="fill" id="o2-bar"></div></div></div>
+  <div class="buttons" id="buttons">
+    <button id="heat-btn">Run heaters</button>
+    <button id="o2-btn">Run oxygen recycler</button>
+  </div>
+  <p id="log">Pick one action per day. Survive 14 days.</p>
+  <div id="end"><h2 id="end-title"></h2><p id="end-text"></p><button id="restart">Restart</button></div>
+</main>
+<script>
+const DAYS = 14;
+let s;
+
+function reset() {
+  s = { day: 1, battery: 100, heat: 10, oxygen: 80, coldDays: 0, over: false };
+  document.getElementById("end").className = "";
+  document.getElementById("buttons").style.display = "flex";
+  document.getElementById("log").textContent = "Pick one action per day. Survive 14 days.";
+  draw();
+}
+
+// Colour = green safe, yellow warning, red critical
+function meter(id, value, min, max, text, colour) {
+  document.getElementById(id + "-v").textContent = text;
+  const bar = document.getElementById(id + "-bar");
+  bar.style.width = (100 * (value - min) / (max - min)) + "%";
+  bar.className = "fill " + colour;
+}
+
+function draw() {
+  document.getElementById("day").textContent = `Day ${s.day} of ${DAYS}` + (s.coldDays ? ` · Too cold: ${s.coldDays} of 3 days` : "");
+  meter("b", s.battery, 0, 100, s.battery + " kWh", s.battery > 40 ? "green" : s.battery > 15 ? "yellow" : "red");
+  meter("heat", s.heat, -50, 25, s.heat + " °C", s.heat > -10 ? "green" : s.heat >= -20 ? "yellow" : "red");
+  meter("o2", s.oxygen, 0, 100, s.oxygen + " %", s.oxygen > 40 ? "green" : s.oxygen > 20 ? "yellow" : "red");
+}
+
+function play(action) {
+  if (s.over) return;
+  const before = { battery: s.battery, heat: s.heat, oxygen: s.oxygen };
+  const powered = s.battery > 0;
+
+  // Rule: run heaters → heat +12, battery -8 (only with power)
+  if (powered && action === "heat") { s.heat = Math.min(25, s.heat + 12); s.battery = Math.max(0, s.battery - 8); }
+  // Rule: run oxygen recycler → oxygen +15, battery -8 (only with power)
+  if (powered && action === "oxygen") { s.oxygen = Math.min(100, s.oxygen + 15); s.battery = Math.max(0, s.battery - 8); }
+
+  // Rule: every day battery -2, oxygen -10
+  s.battery = Math.max(0, s.battery - 2);
+  s.oxygen = Math.max(0, s.oxygen - 10);
+  // Rule: every day heat -6, or -10 when the battery was at 0 (heaters off)
+  s.heat = Math.max(-50, s.heat - (powered ? 6 : 10));
+
+  // Rule: heat below -20 for 3 days in a row → mission lost
+  s.coldDays = s.heat < -20 ? s.coldDays + 1 : 0;
+
+  const d = (name, now, was, unit) => `${name} ${now - was >= 0 ? "+" : ""}${now - was}${unit}`;
+  document.getElementById("log").textContent = (powered ? "" : "No power! Machines off. ") +
+    [d("battery", s.battery, before.battery, " kWh"), d("heat", s.heat, before.heat, " °C"), d("oxygen", s.oxygen, before.oxygen, " %")].join(" · ");
+
+  // Rule: oxygen 0 → mission lost
+  if (s.oxygen <= 0) return finish(false, "The oxygen ran out.");
+  if (s.coldDays >= 3) return finish(false, "Three days below -20 °C. The base froze.");
+  // Rule: survive to the end of day 14 → crew survives
+  if (s.day === DAYS) return finish(true, "Sunrise! The crew made it through the lunar night.");
+  s.day++;
+  draw();
+}
+
+function finish(win, text) {
+  s.over = true;
+  draw();
+  document.getElementById("buttons").style.display = "none";
+  document.getElementById("end").className = win ? "win" : "lose";
+  document.getElementById("end-title").textContent = win ? "Crew survives" : "Mission lost";
+  document.getElementById("end-text").textContent = text;
+}
+
+document.getElementById("heat-btn").onclick = () => play("heat");
+document.getElementById("o2-btn").onclick = () => play("oxygen");
+document.getElementById("restart").onclick = reset;
+reset();
+</script>
+</body>
+</html>

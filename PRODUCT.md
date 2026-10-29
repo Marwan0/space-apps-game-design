@@ -36,7 +36,7 @@ Taught by a game designer, not a data-viz person: the claim is that a dashboard 
 - Keyboard navigation, slide overview grid, speaker-notes drawer, fullscreen.
 - Interactive pieces: Mars dashboard-vs-simulation, three.js re-entry core-loop sandbox (one entry-angle dial; outcomes are skip, burn-up, or parachute splashdown; heat shield and g-load bars, radio blackout, synthesized sound), "Too heavy to fly?" three.js launch game (satellite, fuel and engine push trade off; outcomes are stuck on the pad, fall back, or orbit with 1 to 3 stars; synthesized sound), Dust Storm Dispatch (a room-voted Mars rover game, balanced by simulation so early panel cleaning wins), "Prototype with AI" slide (spec-to-playable loop, copyable prompt that turns a team's spec into a one-file offline HTML draft, plus safety rules for teens), copyable MVP template (also as an AI prompt), sprint timer. Presenter window (P) syncs notes to a second screen.
 - Content constraints from earlier review: no pop-neuroscience ("dopamine") claims; no project-management tool lists (one rule instead: track variables in a shared doc); no raw phone number on public slides.
-- Past-winner case studies may only state what NASA's official global-winner pages say (verified 2026-10-29, see Evidence on Hand). "Henry's Farm Adventures" could not be verified anywhere and is dropped.
+- Past-winner case studies may only state what NASA's official global-winner pages say (verified 2026-10-29, see Evidence on Hand). "Henry's Farm Adventures" is Zumorroda-X's game, confirmed on the team's official Space Apps project page (2026-10-29). Each winner slide has a QR to the team's playable project or its official Space Apps project page.
 
 ## Brand Commitments
 

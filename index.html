@@ -202,6 +202,8 @@ ul.plain li::before { content: ""; position: absolute; left: 0; top: .5em; width
 .winner .who .meta { font-size: 32px; font-weight: 500; line-height: 1.35; }
 .winner .what { padding: 8px 0 0 56px; display: flex; flex-direction: column; gap: 32px; }
 .winner .what > p:not(.source) { font-size: 46px; line-height: 1.28; }
+.winner .play { display: flex; align-items: center; gap: 28px; color: inherit; text-decoration: none; font-size: 30px; font-weight: 700; line-height: 1.25; }
+.winner .play .qr { width: 220px; height: 220px; padding: 10px; border-width: 4px; flex: none; }
 .winner .steal { padding: 36px 44px; outline-offset: -14px; outline-width: 3px; }
 
 .no-sign { display: flex; flex-direction: column; align-items: flex-start; gap: 18px; }
@@ -554,9 +556,10 @@ body.presenter #presenter { display: grid; grid-template-columns: 2fr 1fr; gap: 
 
 <!-- ======================= III. PAST WINNERS (15 MIN) ======================= -->
 
-<section class="slide winner" data-section="3" data-title="Zumorroda-X (Egypt)" data-notes="Section III, 15 minutes. Start with an Egyptian team. Zumorroda-X won the global Art and Technology Award in 2025 with farmer mini-games. Data became events the player adapts to. [30:00]">
+<section class="slide winner" data-section="3" data-title="Zumorroda-X (Egypt)" data-notes="Section III, 15 minutes. Start with an Egyptian team. Zumorroda-X won the global Art and Technology Award in 2025 with farmer mini-games. Data became events the player adapts to. Their game is Henry's Farm Adventures: tell the room to scan the code and play it tonight, or click it if the room has internet. [30:00]">
   <div class="board green who">
     <div><p class="sign lg">Zumorroda-X</p></div>
+    <a class="play" href="https://henrysfarmadventures.vercel.app/" target="_blank" rel="noopener"><span class="qr"><img src="vendor/qr-zumorroda.svg" alt=""></span><span>Scan to play their game, Henry's Farm Adventures</span></a>
     <p class="meta">Egypt · 2025<br>Global winner, Art &amp; Technology Award<br>Challenge: NASA Farm Navigators</p>
   </div>
   <div class="seam"></div>
@@ -564,13 +567,14 @@ body.presenter #presenter { display: grid; grid-template-columns: 2fr 1fr; gap: 
     <h2 class="sign md" style="--shade: var(--green)">What they built</h2>
     <p>Mini games where you play a farmer on a journey around the world, adapting to heat waves, flooding and other environmental challenges.</p>
     <div class="board yellow steal"><h3>Steal this</h3><p>Put the player in someone's shoes. The data arrives as events they must react to.</p></div>
-    <p class="source">Source: NASA, 2025 Space Apps global winners announcement.</p>
+    <p class="source">Sources: NASA, 2025 Space Apps global winners announcement; the team's Space Apps project page.</p>
   </div>
 </section>
 
-<section class="slide winner" data-section="3" data-title="TerraTales (Cairo)" data-notes="Another Egyptian winner, from Cairo, a year earlier. Best Storytelling, 2024. An interactive game nudging players toward eco-friendly choices. Consequences are the story. [33:00]">
+<section class="slide winner" data-section="3" data-title="TerraTales (Cairo)" data-notes="Another Egyptian winner, from Cairo, a year earlier. Best Storytelling, 2024. An interactive game nudging players toward eco-friendly choices. Consequences are the story. The code opens their Space Apps project page with the demo video and site link. [33:00]">
   <div class="board red who">
     <div><p class="sign lg">TerraTales</p></div>
+    <a class="play" href="https://www.spaceappschallenge.org/nasa-space-apps-2024/find-a-team/terratales/?tab=project" target="_blank" rel="noopener"><span class="qr"><img src="vendor/qr-terratales.svg" alt=""></span><span>Scan for their project, demo video and site</span></a>
     <p class="meta">Cairo, Egypt · 2024<br>Global winner, Best Storytelling Award</p>
   </div>
   <div class="seam"></div>
@@ -578,13 +582,14 @@ body.presenter #presenter { display: grid; grid-template-columns: 2fr 1fr; gap: 
     <h2 class="sign md">What they built</h2>
     <p>An interactive game that encourages players to make eco-friendly choices, showing the climate outcome of acting or not acting.</p>
     <div class="board yellow steal"><h3>Steal this</h3><p>Let each choice show its consequence. The story is what the player caused.</p></div>
-    <p class="source">Sources: NASA, 2024 global winners announcement; Universe Magazine.</p>
+    <p class="source">Sources: NASA, 2024 global winners announcement; Universe Magazine; the team's Space Apps project page.</p>
   </div>
 </section>
 
-<section class="slide winner" data-section="3" data-title="Eco-Metropolis (UAE)" data-notes="Innovisionaries from Sharjah, Most Inspirational Award 2024. A city-building game: planning and resource decisions. Scarcity creates the choices. [36:00]">
+<section class="slide winner" data-section="3" data-title="Eco-Metropolis (UAE)" data-notes="Innovisionaries from Sharjah, Most Inspirational Award 2024. A city-building game: planning and resource decisions. Scarcity creates the choices. The code opens their project page: demo video and the game code on GitHub. [36:00]">
   <div class="board blue who">
     <div><p class="sign lg">Eco-Metropolis</p></div>
+    <a class="play" href="https://www.spaceappschallenge.org/nasa-space-apps-2024/find-a-team/innovisionaries/?tab=project" target="_blank" rel="noopener"><span class="qr"><img src="vendor/qr-ecometropolis.svg" alt=""></span><span>Scan for their project, demo video and code</span></a>
     <p class="meta">Team Innovisionaries<br>Sharjah, UAE · 2024<br>Global winner, Most Inspirational Award</p>
   </div>
   <div class="seam"></div>
@@ -592,13 +597,14 @@ body.presenter #presenter { display: grid; grid-template-columns: 2fr 1fr; gap: 
     <h2 class="sign md" style="--shade: var(--blue)">What they built</h2>
     <p>A city-building game where players make urban-planning and resource-management decisions.</p>
     <div class="board yellow steal"><h3>Steal this</h3><p>Scarce resources force real trade-offs. Give the player less than they want.</p></div>
-    <p class="source">Source: NASA, 2024 Space Apps global winners announcement.</p>
+    <p class="source">Sources: NASA, 2024 Space Apps global winners announcement; the team's Space Apps project page.</p>
   </div>
 </section>
 
-<section class="slide winner" data-section="3" data-title="PureFlow (Brazil)" data-notes="PureFlow, Brazil, Best Mission Concept 2025. Not a game but a simulation: design a habitat in 3D, then test it against solar storms. Simulations can be test benches. [39:00]">
+<section class="slide winner" data-section="3" data-title="PureFlow (Brazil)" data-notes="PureFlow, Brazil, Best Mission Concept 2025. Not a game but a simulation: design a habitat in 3D, then test it against solar storms. Simulations can be test benches. The code opens PureFlow itself, live in the browser. [39:00]">
   <div class="board yellow who">
     <div><p class="sign lg">PureFlow</p></div>
+    <a class="play" href="https://larasdiniz.github.io/PureFlow-2025/src/public/html/home/home.html" target="_blank" rel="noopener"><span class="qr"><img src="vendor/qr-pureflow.svg" alt=""></span><span>Scan to try PureFlow</span></a>
     <p class="meta">Brazil · 2025<br>Global winner, Best Mission Concept Award</p>
   </div>
   <div class="seam"></div>
@@ -606,11 +612,35 @@ body.presenter #presenter { display: grid; grid-template-columns: 2fr 1fr; gap: 
     <h2 class="sign md">What they built</h2>
     <p>A platform to design and model a space habitat in 3D, then test it against space-weather threats like solar storms.</p>
     <div class="board green steal"><h3>Steal this</h3><p>A simulation can be a test bench: build it, stress it, see what breaks.</p></div>
-    <p class="source">Source: NASA, 2025 Space Apps global winners announcement.</p>
+    <p class="source">Sources: NASA, 2025 Space Apps global winners announcement; the team's Space Apps project page.</p>
   </div>
 </section>
 
-<section class="slide" data-section="3" data-title="Egypt has done this twice" style="grid-template-rows: auto 1fr;" data-notes="Land the belief. Two Egyptian teams won global awards with games in two years. 2025 winners were picked from 18,860 teams. Then the pattern: a decision, data inside the rules, a finished loop. 'Next year it could be a team in this room.' [42:00]">
+<section class="slide" data-section="3" data-title="Pick your extras" style="grid-template-rows: auto auto 1fr;" data-notes="Ask the room: what makes a game fun? Take three answers, then sort them here. Every game needs the core loop: choices, challenge, feedback. Then pick ONE extra, not five: each extra costs hours. Point at the winners: TerraTales picked story, Zumorroda-X picked characters. Entertainment and imagination are what players feel when this works, not something you build. [41:00]">
+  <h2 class="sign">Three must-haves. Then one extra.</h2>
+  <div class="cols-2" style="align-self: start;">
+    <div class="board green">
+      <h3>Every game needs</h3>
+      <ul class="plain">
+        <li><b>Choices</b>: a real dilemma</li>
+        <li><b>Challenge</b>: never enough to go around, like Eco-Metropolis</li>
+        <li><b>Feedback</b>: see what broke, like PureFlow</li>
+      </ul>
+    </div>
+    <div class="board white">
+      <h3>Pick ONE extra</h3>
+      <ul class="plain">
+        <li><b>Story</b>, like TerraTales</li>
+        <li><b>Characters</b>, like Henry in Zumorroda-X</li>
+        <li><b>Mystery</b>: data reveals a clue</li>
+        <li><b>Puzzle</b>: a combination to crack</li>
+      </ul>
+    </div>
+  </div>
+  <div class="board yellow" style="padding: 30px 52px; align-self: start;"><p class="sign md">Fun is the result, not an ingredient.</p></div>
+</section>
+
+<section class="slide" data-section="3" data-title="Egypt has done this twice" style="grid-template-rows: auto 1fr;" data-notes="Land the belief. Two Egyptian teams won global awards with games in two years. 2025 winners were picked from 18,860 teams. Then the pattern: a decision, data inside the rules, a finished loop. 'Next year it could be a team in this room.' [43:00]">
   <h2 class="sign">Egypt has done this twice. With games.</h2>
   <div class="cols-2" style="align-self: start;">
     <div class="board black">
@@ -749,19 +779,19 @@ body.presenter #presenter { display: grid; grid-template-columns: 2fr 1fr; gap: 
   </div>
 </section>
 
-<section class="slide template" data-section="6" data-title="The spec template" data-notes="Leave this up. Press Copy and paste it in the event channel so teams start from the same structure. Walk the lunar-night example in 60 seconds. [77:00]">
+<section class="slide template" data-section="6" data-title="The spec template" data-notes="Leave this up. Press Copy and paste it in the event channel so teams start from the same structure. Walk the lunar-night example in 60 seconds: every decision has numbers, or the AI has to guess. examples/lunar-night.html is this exact spec built with the AI prompt; alternating wins, pressing one button loses. [77:00]">
   <h2 class="sign" style="--shade: var(--blue)">The one-minute spec</h2>
   <div class="board white" id="tpl">
-    <h3>1 · Goal (one sentence)</h3><p>Keep the lunar crew alive through a 14-day night.</p>
+    <h3>1 · Goal (one sentence)</h3><p>Keep the lunar crew alive through a 14-day night. One action per day.</p>
     <h3>2 · Three variables</h3>
-    <ul class="plain"><li>Battery: 0–100 kWh, −5 per day</li><li>Heat: −50 to +25 °C, safe above −10</li><li>Oxygen: 0–100%, −2% per day</li></ul>
+    <ul class="plain"><li>Battery: starts 100 kWh, −2 per day</li><li>Heat: starts +10 °C, −6 per day, safe above −10</li><li>Oxygen: starts 80%, −10% per day</li></ul>
   </div>
   <div class="board white">
     <h3>3 · Two decisions</h3>
-    <ul class="plain"><li>Run heaters: heat +, battery −10</li><li>Run oxygen recycler: oxygen +, battery −15</li></ul>
+    <ul class="plain"><li>Run heaters: heat +12, battery −8</li><li>Run oxygen recycler: oxygen +15, battery −8</li></ul>
     <h3>4 · Rule table</h3>
-    <ul class="plain"><li>Battery 0 → heaters off, heat −10 per day</li><li>Heat below −20 for 3 days → mission lost</li></ul>
-    <h3>5 · End state</h3><p>Day 14, all meters above 0 → crew survives.</p>
+    <ul class="plain"><li>Battery 0 → machines off, heat −10 per day</li><li>Heat below −20 for 3 days → mission lost</li><li>Oxygen 0 → mission lost</li></ul>
+    <h3>5 · End state</h3><p>Survive day 14 → crew survives.</p>
   </div>
   <div class="btn-row" style="grid-column: 1 / -1; align-items: center;">
     <button class="paint-btn solid" id="copy-tpl">Copy blank template</button>
@@ -1909,11 +1939,11 @@ body.presenter #presenter { display: grid; grid-template-columns: 2fr 1fr; gap: 
   const BLANK = [
     "ONE-MINUTE GAME SPEC",
     "1. Goal (one sentence):",
-    "2. Three variables (name, range, how it changes):",
+    "2. Three variables (name, start value, change per turn):",
     "   - ",
     "   - ",
     "   - ",
-    "3. Two decisions (what the player trades):",
+    "3. Two decisions (what each one adds and costs, in numbers):",
     "   - ",
     "   - ",
     "4. Rule table (IF ... THEN ...):",
@@ -1926,8 +1956,9 @@ body.presenter #presenter { display: grid; grid-template-columns: 2fr 1fr; gap: 
     "Build ONE self-contained HTML file (HTML, CSS and JavaScript, no libraries, no internet) that runs by double-clicking it.",
     "Use exactly the goal, variables, decisions and rules in my spec below. Do not invent science or numbers: if something is missing, ask me before you write code.",
     "Show each variable as a big meter: green when safe, yellow as a warning, red when critical.",
-    "Give the player one button per decision. After each click, show what changed in numbers (for example \"oxygen -20\").",
+    "Give the player one button per decision. Each click is one turn: apply the decision, then the rules. After each click, show what changed in numbers (for example \"oxygen -20\").",
     "Show a clear win or lose screen and a Restart button.",
+    "Before the code, check my numbers: if one button always wins, or a decision never matters, tell me which numbers to change.",
     "Keep the code short, with a comment above each rule.",
     "After the code, list the rules you built in plain English so we can check them against the spec.",
     "",

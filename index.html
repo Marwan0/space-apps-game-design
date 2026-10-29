@@ -197,6 +197,7 @@ ul.plain li::before { content: ""; position: absolute; left: 0; top: .5em; width
 .winner { grid-template-columns: 1fr 14px 1.25fr; grid-template-rows: 1fr; column-gap: 0; }
 .winner .who { justify-content: space-between; margin-right: 48px; }
 .winner .who .sign { font-size: 100px; }
+.nw { white-space: nowrap; }
 .winner .who .meta { font-size: 32px; font-weight: 500; line-height: 1.35; }
 .winner .what { padding: 8px 0 0 56px; display: flex; flex-direction: column; gap: 32px; }
 .winner .what > p:not(.source) { font-size: 46px; line-height: 1.28; }
@@ -333,12 +334,12 @@ body.presenter #presenter { display: grid; grid-template-columns: 2fr 1fr; gap: 
 
 <section class="slide" data-section="1" data-title="Today's plan" style="grid-template-rows: auto auto 1fr;" data-notes="Intro yourself in one line: 'I'm Marwan, I design games and I love guiding brilliant minds into this world.' Walk the plan left to right. Point at the hands-on block: 'This is the part that matters. 35 minutes, you build.' [1:00]">
   <h2 class="sign">Hello. I'm Marwan, and here's our next 2 hours.</h2>
-  <p class="lead">By the end, your team has a one-minute game spec ready to build.</p>
+  <p class="lead" style="max-width: none;">By the end, your team has a <span class="nw">one-minute</span> game spec ready to build.</p>
   <div class="plan">
     <div class="board red"><span class="m">10</span><p>Why games, not dashboards</p></div>
     <div class="board blue"><span class="m">20</span><p>The core loop</p></div>
     <div class="board green"><span class="m">15</span><p>How winners did it</p></div>
-    <div class="board yellow"><span class="m">15</span><p>The 48-hour playbook</p></div>
+    <div class="board yellow"><span class="m">15</span><p>The <span class="nw">48-hour</span> playbook</p></div>
     <div class="board red"><span class="m">15</span><p>Live demo</p></div>
     <div class="board blue"><span class="m">35</span><p>You build a spec</p></div>
     <div class="board green"><span class="m">10</span><p>Rules &amp; questions</p></div>
@@ -555,7 +556,7 @@ body.presenter #presenter { display: grid; grid-template-columns: 2fr 1fr; gap: 
 
 <section class="slide winner" data-section="3" data-title="Zumorroda-X (Egypt)" data-notes="Section III, 15 minutes. Start with an Egyptian team. Zumorroda-X won the global Art and Technology Award in 2025 with farmer mini-games. Data became events the player adapts to. Their game is Henry's Farm Adventures: tell the room to scan the code and play it tonight, or click it if the room has internet. [30:00]">
   <div class="board green who">
-    <div><p class="sign lg">Zumorroda-X</p></div>
+    <div><p class="sign lg nw" style="font-size: 86px;">Zumorroda-X</p></div>
     <a class="play" href="https://henrysfarmadventures.vercel.app/" target="_blank" rel="noopener"><span class="qr"><img src="vendor/qr-zumorroda.svg" alt=""></span><span>Scan to play their game, Henry's Farm Adventures</span></a>
     <p class="meta">Egypt · 2025<br>Global winner, Art &amp; Technology Award<br>Challenge: NASA Farm Navigators</p>
   </div>
@@ -592,7 +593,7 @@ body.presenter #presenter { display: grid; grid-template-columns: 2fr 1fr; gap: 
   <div class="seam"></div>
   <div class="what">
     <h2 class="sign md" style="--shade: var(--blue)">What they built</h2>
-    <p>A city-building game where players make urban-planning and resource-management decisions.</p>
+    <p>A city-building game where players make urban-planning and <span class="nw">resource-management</span> decisions.</p>
     <div class="board yellow steal"><h3>Steal this</h3><p>Scarce resources force real trade-offs. Give the player less than they want.</p></div>
     <p class="source">Sources: NASA, 2024 Space Apps global winners announcement; the team's Space Apps project page.</p>
   </div>
@@ -607,7 +608,7 @@ body.presenter #presenter { display: grid; grid-template-columns: 2fr 1fr; gap: 
   <div class="seam"></div>
   <div class="what">
     <h2 class="sign md">What they built</h2>
-    <p>A platform to design and model a space habitat in 3D, then test it against space-weather threats like solar storms.</p>
+    <p>A platform to design and model a space habitat in 3D, then test it against <span class="nw">space-weather</span> threats like solar storms.</p>
     <div class="board green steal"><h3>Steal this</h3><p>A simulation can be a test bench: build it, stress it, see what breaks.</p></div>
     <p class="source">Sources: NASA, 2025 Space Apps global winners announcement; the team's Space Apps project page.</p>
   </div>

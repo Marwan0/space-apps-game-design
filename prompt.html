@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AI Game Prompt</title>
+<meta name="description" content="Turn your one-minute game spec into a playable HTML draft with any AI chat. NASA Space Apps Cairo 2026.">
+<style>
+@font-face { font-family: "Lalezar"; src: url("vendor/fonts/Lalezar-Regular.ttf") format("truetype"); font-display: swap; }
+@font-face { font-family: "Readex Pro"; src: url("vendor/fonts/ReadexPro-Variable.ttf") format("truetype"); font-weight: 160 700; font-display: swap; }
+:root { --red: #d7261e; --yellow: #ffd100; --green: #0a7d3b; --blue: #1846a3; --black: #111111; --enamel: #fafaf7; }
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--enamel); color: var(--black); font: 18px/1.5 "Readex Pro", sans-serif; }
+main { max-width: 760px; margin: 0 auto; padding: 24px 16px 48px; }
+h1, h2 { font-family: "Lalezar", sans-serif; font-weight: 400; text-transform: uppercase; line-height: 1.05; margin: 0; }
+h1 { font-size: clamp(36px, 9vw, 60px); text-shadow: 3px 3px 0 var(--red); }
+h2 { font-size: 28px; margin-bottom: 8px; }
+.sub { margin: 8px 0 24px; }
+.board { border: 5px solid var(--black); padding: 20px; margin-bottom: 20px; }
+.blue { background: var(--blue); color: var(--enamel); border-color: var(--blue); }
+ol { margin: 0; padding-left: 24px; }
+li { margin: 4px 0; }
+pre { white-space: pre-wrap; word-break: break-word; background: #fff; border: 3px solid var(--black); padding: 14px; font: 15px/1.45 ui-monospace, Consolas, monospace; max-height: 50vh; overflow: auto; margin: 12px 0; }
+button { font: 24px "Lalezar", sans-serif; text-transform: uppercase; background: var(--black); color: var(--enamel); border: 5px solid var(--black); padding: 10px 20px; cursor: pointer; }
+button:hover { background: var(--red); border-color: var(--red); }
+button:focus-visible, a:focus-visible { outline: 5px solid var(--yellow); outline-offset: 3px; }
+#msg { margin-left: 12px; font-weight: 600; }
+.warn { background: var(--yellow); border-color: var(--yellow); }
+a { color: inherit; font-weight: 700; }
+</style>
+</head>
+<body>
+<main>
+  <h1>Spec in, playable draft out</h1>
+  <p class="sub">NASA Space Apps Cairo 2026 · Game &amp; Simulation Design workshop</p>
+
+  <div class="board blue">
+    <h2>The AI prototype loop</h2>
+    <ol>
+      <li><b>Paste</b> the prompt below into any AI chat and fill in your spec.</li>
+      <li><b>Save</b> the reply as game.html and double-click it.</li>
+      <li><b>Play</b> one minute: does the choice matter?</li>
+      <li><b>Ask</b> for one change at a time. Paste errors exactly.</li>
+      <li><b>Keep</b> every version that works.</li>
+    </ol>
+  </div>
+
+  <div class="board">
+    <h2>The prompt</h2>
+    <p>Fill in every line of the spec with numbers. If a number is missing, the AI has to ask or guess.</p>
+    <pre id="prompt"></pre>
+    <button id="copy">Copy prompt</button><span id="msg" role="status"></span>
+  </div>
+
+  <div class="board warn">
+    <p style="margin: 0;"><b>Never paste</b> passwords, keys or personal details. Follow your event's AI rules and say what AI made.</p>
+  </div>
+
+  <p>Example: <a href="examples/lunar-night.html">a lunar-night game</a> built from this prompt.</p>
+</main>
+<script src="ai-prompt.js"></script>
+<script>
+  const text = `${AI_KIT.AI_PROMPT}\n${AI_KIT.BLANK}`;
+  document.getElementById("prompt").textContent = text;
+  document.getElementById("copy").onclick = () => navigator.clipboard.writeText(text)
+    .then(() => document.getElementById("msg").textContent = "Copied.")
+    .catch(() => document.getElementById("msg").textContent = "Copy blocked. Select the text and copy it.");
+</script>
+</body>
+</html>

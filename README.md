@@ -56,6 +56,8 @@ Past-winner slides only state what NASA's 2024 and 2025 global-winner announceme
 - `vendor/qr-zumorroda.svg`, `qr-terratales.svg`, `qr-ecometropolis.svg`, `qr-pureflow.svg`: QR codes on slides 15–18 to each winner's game or official Space Apps project page. The QR and the link on the slide point to the same URL; change both together
 - `links/`: source of that links page, its own git repo pushed to github.com/Marwan0/Marwan0.github.io. Edit, commit and push there; GitHub Pages republishes in about a minute
 - `script-ar.md`: what to say on each slide, in Egyptian Arabic
+- `ai-prompt.js`: the AI prompt and blank spec template, shared by the deck and `prompt.html`. Edit the prompt here only
+- `prompt.html`: phone page with the full prompt and a Copy button; `vendor/qr-prompt.svg` on slides 24 and 28 points to its online copy
 - `examples/lunar-night.html`: the slide 28 lunar-night spec built with the slide 24 AI prompt, as a sample of what teams get back. Its numbers are balanced so alternating actions wins and one button alone loses
 - `PRODUCT.md`: audience, purpose, verified facts
 - `DESIGN.md`: the visual system (paints, lettering, boards, rules) for adding slides on-style

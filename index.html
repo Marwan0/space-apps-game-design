@@ -198,6 +198,9 @@ ul.plain li::before { content: ""; position: absolute; left: 0; top: .5em; width
 .winner .who { justify-content: space-between; margin-right: 48px; }
 .winner .who .sign { font-size: 100px; }
 .nw { white-space: nowrap; }
+.prompt-qr { display: flex; align-items: center; gap: 20px; color: inherit; text-decoration: none; font-size: 28px; font-weight: 700; line-height: 1.2; }
+.prompt-qr .qr { width: 150px; height: 150px; padding: 8px; border-width: 4px; flex: none; }
+.template .prompt-qr { margin-left: auto; }
 .winner .who .meta { font-size: 32px; font-weight: 500; line-height: 1.35; }
 .winner .what { padding: 8px 0 0 56px; display: flex; flex-direction: column; gap: 32px; }
 .winner .what > p:not(.source) { font-size: 46px; line-height: 1.28; }
@@ -710,7 +713,7 @@ body.presenter #presenter { display: grid; grid-template-columns: 2fr 1fr; gap: 
   </div>
 </section>
 
-<section class="slide pair" data-section="4" data-title="Prototype with AI" data-notes="Six minutes. The spec they write later becomes the prompt. Walk the loop top to bottom: paste the spec, save the reply as game.html, double-click it, play one minute, then ask for one change at a time. Stress two habits: paste the exact error message, and save every version that works so a bad answer never costs them the game. Press Copy full prompt and drop it in the event channel. Safety, out loud: never paste passwords, keys or personal details, and follow the event's AI rules. [54:00]">
+<section class="slide pair" data-section="4" data-title="Prototype with AI" data-notes="Six minutes. The spec they write later becomes the prompt. Walk the loop top to bottom: paste the spec, save the reply as game.html, double-click it, play one minute, then ask for one change at a time. Stress two habits: paste the exact error message, and save every version that works so a bad answer never costs them the game. Press Copy full prompt and drop it in the event channel, or have them scan the QR: it opens the full prompt on their phone. Safety, out loud: never paste passwords, keys or personal details, and follow the event's AI rules. [54:00]">
   <h2 class="sign" style="--shade: var(--green)">Spec in, playable draft out</h2>
   <div class="board blue" style="margin-right: 48px;">
     <h3>The AI prototype loop</h3>
@@ -727,6 +730,7 @@ body.presenter #presenter { display: grid; grid-template-columns: 2fr 1fr; gap: 
     <h3>Prompt starter</h3>
     <p class="prompt">"Build one HTML file that runs offline. Use only the rules in my spec; ask before inventing numbers. One button per decision, green-yellow-red meters, show every change in numbers."</p>
     <div class="btn-row" style="align-items: center;">
+      <a class="prompt-qr" href="https://marwan0.github.io/space-apps-game-design/prompt.html" target="_blank" rel="noopener"><span class="qr"><img src="vendor/qr-prompt.svg" alt="QR code: the full AI prompt page"></span><span>Scan for the full prompt</span></a>
       <button class="paint-btn solid" id="copy-ai">Copy full prompt</button>
       <span class="small" id="copy-ai-msg" role="status"></span>
     </div>
@@ -795,6 +799,7 @@ body.presenter #presenter { display: grid; grid-template-columns: 2fr 1fr; gap: 
     <button class="paint-btn solid" id="copy-tpl">Copy blank template</button>
     <button class="paint-btn" id="copy-tpl-ai">Copy as AI prompt</button>
     <span class="small" id="copy-msg" role="status"></span>
+    <a class="prompt-qr" href="https://marwan0.github.io/space-apps-game-design/prompt.html" target="_blank" rel="noopener"><span class="qr"><img src="vendor/qr-prompt.svg" alt="QR code: the full AI prompt page"></span><span>Scan for the full prompt</span></a>
   </div>
 </section>
 
@@ -857,6 +862,7 @@ body.presenter #presenter { display: grid; grid-template-columns: 2fr 1fr; gap: 
 </div>
 
 <script src="vendor/three.min.js"></script>
+<script src="ai-prompt.js"></script>
 <script>
 (() => {
   const SECTIONS = {
@@ -1934,34 +1940,7 @@ body.presenter #presenter { display: grid; grid-template-columns: 2fr 1fr; gap: 
   requestAnimationFrame(dsLoop);
 
   // ---------- Template copy ----------
-  const BLANK = [
-    "ONE-MINUTE GAME SPEC",
-    "1. Goal (one sentence):",
-    "2. Three variables (name, start value, change per turn):",
-    "   - ",
-    "   - ",
-    "   - ",
-    "3. Two decisions (what each one adds and costs, in numbers):",
-    "   - ",
-    "   - ",
-    "4. Rule table (IF ... THEN ...):",
-    "   - ",
-    "5. End state (win and lose):",
-  ].join("\n");
-  // The prompt that turns a spec into a first playable draft (slides "Prototype with AI" and the template)
-  const AI_PROMPT = [
-    "You are helping a team of first-time game makers at NASA Space Apps build a prototype.",
-    "Build ONE self-contained HTML file (HTML, CSS and JavaScript, no libraries, no internet) that runs by double-clicking it.",
-    "Use exactly the goal, variables, decisions and rules in my spec below. Do not invent science or numbers: if something is missing, ask me before you write code.",
-    "Show each variable as a big meter: green when safe, yellow as a warning, red when critical.",
-    "Give the player one button per decision. Each click is one turn: apply the decision, then the rules. After each click, show what changed in numbers (for example \"oxygen -20\").",
-    "Show a clear win or lose screen and a Restart button.",
-    "Before the code, check my numbers: if one button always wins, or a decision never matters, tell me which numbers to change.",
-    "Keep the code short, with a comment above each rule.",
-    "After the code, list the rules you built in plain English so we can check them against the spec.",
-    "",
-    "MY SPEC:",
-  ].join("\n");
+  const { BLANK, AI_PROMPT } = AI_KIT;
   const copy = (text, msg, done) => navigator.clipboard.writeText(text)
     .then(() => $(msg).textContent = done)
     .catch(() => $(msg).textContent = "Copy blocked by the browser. Type it from the slide instead.");

@@ -1,0 +1,6 @@
+# Previous deck, kept locally only (117 MB with node_modules)
+_old/
+# Links page: its own repo, Marwan0/Marwan0.github.io
+links/
+# Local tool config
+.claude/

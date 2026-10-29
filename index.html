@@ -1,0 +1,1944 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Game &amp; Simulation Design for Space Apps · Marwan Ayyad</title>
+<style>
+@font-face { font-family: "Lalezar"; src: url("vendor/fonts/Lalezar-Regular.ttf") format("truetype"); font-display: block; }
+@font-face { font-family: "Readex Pro"; src: url("vendor/fonts/ReadexPro-Variable.ttf") format("truetype"); font-weight: 160 700; font-display: block; }
+
+:root {
+  --red: #d7261e;
+  --yellow: #ffd100;
+  --green: #0a7d3b;
+  --blue: #1846a3;
+  --black: #111111;
+  --enamel: #fafaf7;
+  --display: "Lalezar", "Readex Pro", sans-serif;
+  --text: "Readex Pro", system-ui, sans-serif;
+  --rail: 76px;
+  --frame: 14px;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { height: 100%; background: var(--black); overflow: hidden; }
+body { display: flex; align-items: center; justify-content: center; font-family: var(--text); color: var(--black); }
+::selection { background: var(--yellow); color: var(--black); }
+:focus-visible { outline: 5px solid var(--yellow); outline-offset: 4px; box-shadow: 0 0 0 9px var(--black); }
+button { font: inherit; color: inherit; cursor: pointer; }
+
+/* Fixed sign frame: never moves, only the slide inside changes */
+#stage {
+  position: relative; flex-shrink: 0;
+  width: 1920px; height: 1080px;
+  background: var(--enamel);
+  border: var(--frame) solid var(--black);
+  transform-origin: center center;
+  overflow: hidden;
+}
+
+.slide {
+  position: absolute; inset: 0 0 var(--rail) 0;
+  padding: 56px 72px 48px;
+  display: none;
+  gap: 32px;
+}
+.slide.on { display: grid; }
+
+/* Lettering */
+.sign {
+  font-family: var(--display); font-weight: 400;
+  font-size: 92px; line-height: 1.02; letter-spacing: 0;
+  color: var(--black);
+  text-shadow: .045em .045em 0 var(--shade, var(--red));
+  text-wrap: balance;
+  text-transform: uppercase; letter-spacing: .01em;
+}
+.sign.xl { font-size: 136px; line-height: .98; }
+.sign.promise { font-size: 84px; }
+.sign.lg { font-size: 116px; }
+.sign.md { font-size: 64px; }
+.sign.sm { font-size: 48px; }
+.on-paint .sign, .sign.light { color: var(--enamel); --shade: var(--black); }
+.yellow .sign { color: var(--black); --shade: var(--red); }
+p, li { font-size: 38px; line-height: 1.32; font-weight: 400; text-wrap: pretty; }
+.lead { font-size: 46px; line-height: 1.25; font-weight: 500; max-width: 30ch; }
+.small { font-size: 28px; line-height: 1.35; }
+b, strong { font-weight: 650; }
+.ar { font-family: var(--display); direction: rtl; }
+
+/* Painted boards with a pinstripe inset */
+.board {
+  position: relative;
+  padding: 44px 52px;
+  outline: 4px solid currentColor; outline-offset: -18px;
+  display: flex; flex-direction: column; gap: 20px;
+  min-width: 0;
+}
+.red    { background: var(--red);    color: var(--enamel); }
+.green  { background: var(--green);  color: var(--enamel); }
+.blue   { background: var(--blue);   color: var(--enamel); }
+.yellow { background: var(--yellow); color: var(--black); }
+.black  { background: var(--black);  color: var(--enamel); }
+.white  { background: var(--enamel); color: var(--black); border: 6px solid var(--black); outline-color: var(--black); }
+.red .sign, .green .sign, .blue .sign, .black .sign { color: var(--enamel); --shade: var(--black); }
+.black .sign { --shade: var(--red); }
+.board h3, .board h2.host { font-family: var(--display); font-weight: 400; font-size: 64px; line-height: 1.02; text-transform: uppercase; letter-spacing: .01em; text-wrap: balance; }
+.loop .board h3 { font-size: 76px; }
+.loop .board p { font-size: 48px; }
+.board p, .board li { font-size: 42px; line-height: 1.28; }
+.cols-3 > .board, .cols-4 > .board, .pair > .board { justify-content: flex-start; }
+.cols-3 .board h3 { font-size: 74px; }
+.cols-3 .board p { font-size: 48px; }
+.cols-4 .board h3 { font-size: 56px; }
+.cols-4 .board p { font-size: 38px; }
+
+/* Pose and answer: claim and demonstration across one seam */
+.pair { grid-template-columns: 1fr 14px 1fr; grid-template-rows: auto 1fr; column-gap: 0; row-gap: 32px; }
+.pair > .sign, .pair > header { grid-column: 1 / -1; }
+.seam { background: var(--black); }
+
+.cols-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 28px; }
+.cols-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 28px; }
+.cols-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 24px; }
+.stack { display: flex; flex-direction: column; gap: 24px; }
+ul.plain { list-style: none; display: flex; flex-direction: column; gap: 14px; }
+ul.plain li { padding-left: 1.1em; position: relative; }
+ul.plain li::before { content: ""; position: absolute; left: 0; top: .5em; width: .42em; height: .42em; background: currentColor; }
+.source { font-size: 24px; line-height: 1.3; opacity: 1; align-self: end; }
+.synthetic { font-size: 24px; font-weight: 500; }
+
+/* Paint buttons */
+.paint-btn {
+  font-family: var(--display); font-size: 40px; line-height: 1;
+  padding: 22px 30px 18px;
+  background: var(--enamel); color: var(--black);
+  border: 5px solid var(--black);
+  transition: transform 120ms cubic-bezier(.2,.8,.2,1), background-color 120ms;
+}
+.paint-btn:hover { background: var(--yellow); }
+.paint-btn:active { transform: translateY(3px); }
+.paint-btn[disabled] { opacity: .45; cursor: not-allowed; background: var(--enamel); }
+.paint-btn.solid { background: var(--black); color: var(--enamel); }
+.paint-btn.solid:hover { background: var(--red); }
+.btn-row { display: flex; flex-wrap: wrap; gap: 18px; }
+
+/* Meters */
+.meter { display: grid; grid-template-columns: 230px 1fr 110px; align-items: center; gap: 20px; font-size: 34px; font-weight: 500; }
+.meter .track { height: 44px; background: var(--enamel); border: 5px solid var(--black); position: relative; }
+.meter .fill { position: absolute; inset: 0 auto 0 0; background: var(--green); transition: width 220ms cubic-bezier(.16,1,.3,1), background-color 220ms; }
+.meter .num { font-variant-numeric: tabular-nums; text-align: right; font-weight: 650; }
+
+/* Signature interaction: a panel repaints with one wipe */
+.repaintable { position: relative; isolation: isolate; }
+.repaintable::after {
+  content: ""; position: absolute; inset: 0; z-index: -1;
+  background: var(--to, transparent);
+  clip-path: inset(0 100% 0 0);
+}
+.repaintable.wipe::after { animation: wipe 220ms cubic-bezier(.16,1,.3,1) forwards; }
+@keyframes wipe { to { clip-path: inset(0 0 0 0); } }
+
+/* Rail: fixed label strip for slide, section and clocks */
+#rail {
+  position: absolute; left: 0; right: 0; bottom: 0; height: var(--rail);
+  display: grid; grid-template-columns: 1fr auto 1fr; align-items: center;
+  padding: 0 32px; gap: 24px;
+  background: var(--enamel); border-top: 6px solid var(--black);
+  font-size: 26px; font-weight: 500;
+}
+#rail .sec { display: flex; align-items: center; gap: 14px; font-family: var(--display); font-size: 32px; padding-top: 4px; text-transform: uppercase; letter-spacing: .02em; }
+#rail .chip { width: 30px; height: 30px; border: 4px solid var(--black); }
+#rail .right { justify-self: end; display: flex; gap: 28px; font-variant-numeric: tabular-nums; }
+#rail .count { font-weight: 650; }
+
+/* Overlays: notes and grid (presenter tools) */
+.overlay { position: absolute; z-index: 20; display: none; }
+.overlay.open { display: block; }
+#notes { left: 0; right: 0; bottom: var(--rail); background: var(--black); color: var(--enamel); padding: 32px 48px; border-top: 8px solid var(--yellow); }
+#notes p { font-size: 34px; max-width: 70ch; }
+#grid { inset: 0 0 var(--rail) 0; background: var(--enamel); padding: 40px 48px; overflow: auto; }
+#grid ol { list-style: none; display: grid; grid-template-columns: repeat(7, 1fr); gap: 16px; }
+#grid button { width: 100%; min-height: 150px; text-align: left; padding: 16px 18px; border: 5px solid var(--black); background: var(--enamel); display: flex; flex-direction: column; gap: 8px; }
+#grid button:hover, #grid button[aria-current="true"] { background: var(--yellow); }
+#grid .n { font-family: var(--display); font-size: 34px; line-height: 1; }
+#grid .t { font-size: 22px; line-height: 1.25; font-weight: 500; }
+
+/* ---- Slide-specific ---- */
+.title-slide { grid-template-rows: 1fr auto; padding: 0; gap: 0; }
+.title-slide .fascia { padding: 70px 84px 60px; outline-offset: -26px; justify-content: flex-end; }
+.title-slide .ar { font-size: 64px; color: var(--yellow); margin-top: 8px; }
+.title-slide .under { display: grid; grid-template-columns: 1.55fr 1fr; }
+.title-slide .under .board { padding: 40px 56px; }
+
+.plan { display: grid; grid-template-columns: repeat(7, 1fr); gap: 16px; }
+.plan .board { padding: 32px 26px 28px; outline-offset: -12px; outline-width: 3px; gap: 10px; }
+.plan .m { font-family: var(--display); font-size: 120px; line-height: 1; }
+.plan .board p { font-size: 32px; line-height: 1.22; font-weight: 500; }
+
+.rule-slide { padding: 0; }
+.rule-slide .board { padding: 90px 110px; outline-offset: -30px; outline-width: 6px; justify-content: center; }
+
+.readouts { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+.readout { border: 5px solid var(--black); padding: 20px 24px; background: var(--enamel); color: var(--black); }
+.readout .v { font-family: var(--display); font-size: 76px; line-height: 1; font-variant-numeric: tabular-nums; }
+.readout .k { font-size: 28px; font-weight: 500; }
+
+.loop { display: grid; grid-template-columns: 1fr 110px 1fr 110px 1fr; align-items: stretch; }
+.loop .arrow { align-self: center; justify-self: center; }
+.loop .board { transition: transform 300ms cubic-bezier(.16,1,.3,1); }
+.loop .board.live { transform: translateY(-14px); }
+.loop-back { display: flex; align-items: center; gap: 18px; font-size: 32px; font-weight: 500; justify-content: center; }
+
+.ladder { display: grid; grid-template-columns: 1fr 1fr 1fr; align-items: end; gap: 24px; }
+.ladder .board:nth-child(1) { min-height: 360px; }
+.ladder .board:nth-child(2) { min-height: 480px; }
+.ladder .board:nth-child(3) { min-height: 600px; }
+
+.winner { grid-template-columns: 1fr 14px 1.25fr; grid-template-rows: 1fr; column-gap: 0; }
+.winner .who { justify-content: space-between; margin-right: 48px; }
+.winner .who .sign { font-size: 100px; }
+.winner .who .meta { font-size: 32px; font-weight: 500; line-height: 1.35; }
+.winner .what { padding: 8px 0 0 56px; display: flex; flex-direction: column; gap: 32px; }
+.winner .what > p:not(.source) { font-size: 46px; line-height: 1.28; }
+.winner .steal { padding: 36px 44px; outline-offset: -14px; outline-width: 3px; }
+
+.no-sign { display: flex; flex-direction: column; align-items: flex-start; gap: 18px; }
+.no-sign { align-items: flex-start; }
+.no-sign svg { width: 150px; height: 150px; }
+
+.re-wrap { grid-template-columns: 1fr 470px; grid-template-rows: auto minmax(0, 1fr) auto; }
+.re-wrap > .sign, .re-wrap > .cols-3 { grid-column: 1 / -1; }
+.re-dial { justify-content: center; gap: 12px; padding: 24px 36px; }
+.re-dial label { font-size: 34px; font-weight: 500; }
+.re-dial .synthetic { font-size: 24px; }
+.re-dial .angle { font-family: var(--display); font-size: 96px; line-height: .9; font-variant-numeric: tabular-nums; }
+.re-wrap .cols-3 .board { padding: 28px 40px; gap: 10px; }
+.re-wrap .cols-3 .board h3 { font-size: 52px; }
+.re-wrap .cols-3 .board p { font-size: 34px; }
+.rk-wrap { grid-template-columns: 1fr 640px; grid-template-rows: auto auto minmax(0, 1fr); }
+.rk-wrap > .sign, .rk-lead { grid-column: 1 / -1; }
+.rk-lead { max-width: none; font-size: 38px; }
+/* Slide 13 launch game: three.js scene with a painted HUD on top */
+.rk-stage { position: relative; min-height: 0; border: 6px solid var(--black); background: var(--blue); overflow: hidden; }
+#rk3d, #re3d { width: 100%; height: 100%; display: block; cursor: grab; touch-action: none; }
+#rk3d:active, #re3d:active { cursor: grabbing; }
+.re-stage { background: var(--black); }
+.rk-hud .re-black { top: 70px; left: 22px; background: var(--red); }
+.rk-hud { position: absolute; inset: 0; pointer-events: none; color: var(--enamel); font-weight: 500; }
+.rk-hud [hidden] { display: none !important; }
+.rk-hud .chip { position: absolute; background: var(--black); padding: 4px 14px; font-size: 26px; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.rk-goal { top: 18px; right: 22px; }
+.rk-goal.won { background: var(--green); }
+.rk-tele { top: 18px; left: 22px; font-size: 30px !important; }
+.rk-sound { right: 22px; bottom: 18px; }
+.rk-label { transform: translateY(-50%); }
+.rk-stars { position: absolute; top: 18px; left: 22px; display: flex; gap: 10px; }
+.rk-stars svg { width: 72px; height: 72px; }
+.rk-count { position: absolute; inset: 0; display: grid; place-items: center; font-family: var(--display); font-size: 220px; line-height: 1; color: var(--yellow); text-shadow: 10px 10px 0 var(--black); }
+.rk-count.word { font-size: 130px; }
+.rk-bars { position: absolute; left: 22px; bottom: 18px; display: flex; gap: 18px; align-items: flex-end; }
+.rk-bar { display: grid; justify-items: center; gap: 6px; font-size: 24px; }
+.rk-bar i { display: block; width: 60px; background: var(--yellow); border: 4px solid var(--black); }
+.rk-bar.weight i { background: var(--red); }
+.rk-bar span, .rk-bar b { background: var(--black); padding: 2px 10px; font-weight: 500; }
+.rk-side { gap: 20px; min-height: 0; }
+.rk-sliders { gap: 14px; padding: 26px 40px; }
+.rk-sliders .slider { grid-template-columns: 1fr auto; row-gap: 2px; font-size: 30px; }
+.rk-sliders .slider input { grid-column: 1 / -1; grid-row: 2; }
+.rk-sliders .slider .small { font-size: 24px; font-weight: 400; }
+#dv-board { padding: 22px 40px; gap: 8px; }
+.rk-sliders .paint-btn { padding: 14px 30px 10px; margin-top: 4px; }
+#dv-board p { font-size: 32px; }
+#dv-board .sign.md { font-size: 64px; }
+#dv-board .synthetic { font-size: 24px; }
+.dust-wrap { grid-template-columns: 1fr 400px; grid-template-rows: auto minmax(0, 1fr) auto; }
+.dust-wrap > .sign, .dust-bar { grid-column: 1 / -1; }
+#dust { width: 100%; height: 100%; min-height: 0; border: 6px solid var(--black); display: block; background: var(--enamel); }
+.dust-side { gap: 18px; }
+.dust-side .readout { padding: 14px 22px; }
+.dust-side .readout .v { font-size: 56px; }
+.dust-side .readout .k { font-size: 26px; }
+.dust-bar { display: flex; align-items: center; gap: 18px; }
+#ds-msg { flex: 1; font-size: 28px; line-height: 1.3; font-weight: 500; }
+.readout.alarm { animation: shake 360ms cubic-bezier(.36,.07,.19,.97); }
+@keyframes shake { 20%, 60% { transform: translateX(-10px); } 40%, 80% { transform: translateX(10px); } }
+
+.template { grid-template-columns: 1fr 1fr; grid-template-rows: auto 1fr auto; }
+.template > .sign { grid-column: 1 / -1; }
+.template .board { justify-content: center; gap: 10px; padding: 36px 48px; }
+.template .board p, .template .board li { font-size: 33px; line-height: 1.25; }
+.template .board h3 { font-size: 46px; margin-top: 6px; }
+.template ul.plain { gap: 6px; }
+.dense .board { padding: 36px 44px; gap: 16px; }
+.dense .board h3 { font-size: 54px; }
+.dense .board p { font-size: 34px; }
+
+.board .clock { font-family: var(--display); font-size: 340px; line-height: .9; font-variant-numeric: tabular-nums; }
+
+.qr { background: var(--enamel); padding: 16px; border: 5px solid var(--black); width: 300px; height: 300px; }
+.qr img { width: 100%; height: 100%; display: block; image-rendering: pixelated; }
+
+input[type="range"] { -webkit-appearance: none; appearance: none; width: 100%; height: 44px; background: transparent; cursor: pointer; }
+input[type="range"]::-webkit-slider-runnable-track { height: 14px; background: var(--black); }
+input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; width: 44px; height: 44px; margin-top: -15px; background: var(--yellow); border: 5px solid var(--black); }
+input[type="range"]::-moz-range-track { height: 14px; background: var(--black); }
+input[type="range"]::-moz-range-thumb { width: 34px; height: 34px; background: var(--yellow); border: 5px solid var(--black); border-radius: 0; }
+.slider { display: grid; grid-template-columns: 360px 1fr 200px; align-items: center; gap: 24px; font-size: 32px; font-weight: 500; }
+.slider output { font-weight: 650; font-variant-numeric: tabular-nums; text-align: right; }
+
+/* Slide entrance: each sign and board paints on left to right, one after another.
+   Fill mode "backwards" drops the clip once done, so drop-shades are never cut. */
+.slide.enter .paint-in { animation: paint-on 260ms cubic-bezier(.16,1,.3,1) calc(var(--i) * 70ms) backwards; }
+@keyframes paint-on {
+  from { clip-path: inset(-20% 100% -20% -20%); }
+  to   { clip-path: inset(-20% -20% -20% -20%); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .slide.enter .paint-in { animation: none; }
+  .repaintable.wipe::after { animation-duration: 1ms; }
+  .loop .board, .meter .fill { transition: none; }
+}
+
+/* Presenter window (index.html?presenter) */
+body.presenter { display: block; overflow: auto; background: var(--black); color: var(--enamel); padding: 32px 40px; }
+body.presenter #stage { display: none; }
+#presenter { display: none; }
+body.presenter #presenter { display: grid; grid-template-columns: 2fr 1fr; gap: 32px; }
+#presenter h1 { font-family: var(--display); font-weight: 400; font-size: 54px; line-height: 1.05; }
+#presenter .notes { font-size: 30px; line-height: 1.4; margin-top: 18px; max-width: 60ch; }
+#presenter .side { font-size: 24px; display: flex; flex-direction: column; gap: 14px; }
+#presenter .big { font-family: var(--display); font-size: 80px; line-height: 1; font-variant-numeric: tabular-nums; }
+#presenter .next { color: var(--yellow); }
+</style>
+</head>
+<body>
+
+<div id="stage" role="region" aria-roledescription="slide deck" aria-label="Game and Simulation Design for Space Apps">
+
+<!-- ======================= I. INTRO (10 MIN) ======================= -->
+
+<section class="slide title-slide" data-section="1" data-title="Title" data-notes="Doors open. Let this sit while people sit down. Start: 'In two hours, every team in this room leaves with a spec for a game they can build this weekend.' [0:00]">
+  <div class="board red fascia on-paint">
+    <h1 class="sign xl">Game &amp; Simulation Design<br>for Space Apps</h1>
+    <p class="ar" lang="ar">تصميم الألعاب والمحاكاة</p>
+  </div>
+  <div class="under">
+    <div class="board yellow"><p class="sign promise">Leave with a playable spec.</p><p class="small">A 2-hour workshop · NASA Space Apps Cairo 2026</p></div>
+    <div class="board blue"><h2 class="host">Marwan Ayyad</h2><p class="small">Game designer · your host for the next 120 minutes</p></div>
+  </div>
+</section>
+
+<section class="slide" data-section="1" data-title="Today's plan" style="grid-template-rows: auto auto 1fr;" data-notes="Intro yourself in one line: 'I'm Marwan, I design games and I love guiding brilliant minds into this world.' Walk the plan left to right. Point at the hands-on block: 'This is the part that matters. 35 minutes, you build.' [1:00]">
+  <h2 class="sign">Hello. I'm Marwan, and here's our next 2 hours.</h2>
+  <p class="lead">By the end, your team has a one-minute game spec ready to build.</p>
+  <div class="plan">
+    <div class="board red"><span class="m">10</span><p>Why games, not dashboards</p></div>
+    <div class="board blue"><span class="m">20</span><p>The core loop</p></div>
+    <div class="board green"><span class="m">15</span><p>How winners did it</p></div>
+    <div class="board yellow"><span class="m">15</span><p>The 48-hour playbook</p></div>
+    <div class="board red"><span class="m">15</span><p>Live demo</p></div>
+    <div class="board blue"><span class="m">35</span><p>You build a spec</p></div>
+    <div class="board green"><span class="m">10</span><p>Rules &amp; questions</p></div>
+  </div>
+</section>
+
+<section class="slide rule-slide" data-section="1" data-title="The golden rule" data-notes="Read it slowly, once. Pause. Ask: 'Hands up if you've ever played a game that felt like homework.' The point: choice is the product. [3:00]">
+  <div class="board red on-paint">
+    <p class="sign lg">If the player has no meaningful choice, it's not a game.</p>
+    <p class="sign lg" style="--shade: var(--black); color: var(--yellow)">It's just a chore.</p>
+  </div>
+</section>
+
+<section class="slide pair dense" data-section="1" data-title="Dashboard vs simulation" data-notes="Same Mars numbers, both sides. Left: you look, nothing changes. Right: invite someone from the front row to pick each sol. Heat the habitat, run the oxygen plant, or power down. Three sols. Most first tries fail. That failure is the lesson: they cared. Reset and let a second person try. [4:00]">
+  <h2 class="sign">Same Mars data. Two experiences.</h2>
+  <div class="board white" style="margin-right: 48px;">
+    <h3>A dashboard</h3>
+    <div class="readouts">
+      <div class="readout"><div class="v">−63°C</div><div class="k">Outside temperature</div></div>
+      <div class="readout"><div class="v">2.1</div><div class="k">Dust opacity (τ)</div></div>
+      <div class="readout"><div class="v">38%</div><div class="k">Solar output</div></div>
+      <div class="readout"><div class="v">6 sols</div><div class="k">Oxygen reserve</div></div>
+    </div>
+    <p>You read it. <b>Nothing you do changes anything.</b></p>
+    <p class="synthetic">Teaching numbers, not live data.</p>
+  </div>
+  <div class="seam"></div>
+  <div class="board blue repaintable" id="mars" style="margin-left: 48px;">
+    <h3 id="mars-head">A simulation: 3 sols of storm</h3>
+    <div class="stack" style="gap: 14px;">
+      <div class="meter"><span>Power</span><div class="track"><div class="fill" data-m="power"></div></div><span class="num" data-n="power"></span></div>
+      <div class="meter"><span>Warmth</span><div class="track"><div class="fill" data-m="warmth"></div></div><span class="num" data-n="warmth"></span></div>
+      <div class="meter"><span>Oxygen</span><div class="track"><div class="fill" data-m="oxygen"></div></div><span class="num" data-n="oxygen"></span></div>
+    </div>
+    <p id="mars-msg">Each sol, the storm drains warmth and oxygen. Pick one move:</p>
+    <div class="btn-row" id="mars-moves">
+      <button class="paint-btn" data-move="heat">Heat the habitat</button>
+      <button class="paint-btn" data-move="oxygen">Run oxygen plant</button>
+      <button class="paint-btn" data-move="rest">Power down</button>
+      <button class="paint-btn solid" id="mars-reset">Reset</button>
+    </div>
+  </div>
+</section>
+
+<section class="slide" data-section="1" data-title="Why it works" style="grid-template-rows: auto 1fr;" data-notes="Three reasons, one breath each. Fast feedback keeps people engaged. Failing in a game is safe, so they try again. And you remember what you decided far better than what you read. No neuroscience claims, just experience. [7:00]">
+  <h2 class="sign">Why a choice beats a chart</h2>
+  <div class="cols-3" style="align-self: start;">
+    <div class="board green"><h3>Fast feedback</h3><p>Every move answers back within a second.</p></div>
+    <div class="board yellow"><h3>Failure is safe</h3><p>Crash the habitat, press reset, try a smarter plan.</p></div>
+    <div class="board red"><h3>Decisions stick</h3><p>People remember what they chose, not what they scrolled past.</p></div>
+  </div>
+</section>
+
+<!-- ======================= II. ESSENTIALS (20 MIN) ======================= -->
+
+<section class="slide" data-section="2" data-title="The core loop" style="grid-template-rows: auto 1fr auto;" data-notes="Section II, 20 minutes. Every game you love runs this loop many times a minute. Name the three boxes while they light up. Then: 'If one box is missing, you don't have a game yet.' [10:00]">
+  <h2 class="sign" style="--shade: var(--blue)">Every game runs one loop</h2>
+  <div class="loop" id="loop">
+    <div class="board yellow"><h3>Action</h3><p>The player makes a choice.</p></div>
+    <svg class="arrow" viewBox="0 0 110 80" width="110" height="80" aria-hidden="true"><path d="M6 40h78M66 14l30 26-30 26" fill="none" stroke="#111" stroke-width="12" stroke-linecap="square"/></svg>
+    <div class="board blue"><h3>Response</h3><p>The rules change the world's state.</p></div>
+    <svg class="arrow" viewBox="0 0 110 80" width="110" height="80" aria-hidden="true"><path d="M6 40h78M66 14l30 26-30 26" fill="none" stroke="#111" stroke-width="12" stroke-linecap="square"/></svg>
+    <div class="board green"><h3>Feedback</h3><p>The player sees what happened, at once.</p></div>
+  </div>
+  <p class="loop-back"><svg viewBox="0 0 80 60" width="64" height="48" aria-hidden="true"><path d="M70 10v24H14M30 16 10 34l20 18" fill="none" stroke="#111" stroke-width="10" stroke-linecap="square"/></svg> …and the feedback sets up the next choice.</p>
+</section>
+
+<section class="slide pair" data-section="2" data-title="Step 1: a real dilemma" data-notes="An obvious best move is not a choice. A good action is a trade-off: something you gain, something you pay. Ask the room which of the two they'd rather play. [12:00]">
+  <h2 class="sign" style="--shade: var(--blue)">Step 1 · Action: give the player a dilemma</h2>
+  <div class="board white" style="margin-right: 48px;">
+    <h3>No dilemma</h3>
+    <p>"Press <b>Launch</b> to launch the rocket."</p>
+    <p>There's only one sensible move, so there's nothing to decide.</p>
+  </div>
+  <div class="seam"></div>
+  <div class="board yellow" style="margin-left: 48px;">
+    <h3>A real trade-off</h3>
+    <p>"Launch now in bad weather, or wait a day and lose the orbital window?"</p>
+    <p>Both options cost something. <b>That's a choice.</b></p>
+  </div>
+</section>
+
+<section class="slide pair" data-section="2" data-title="Step 2: clear rules" data-notes="Rules must be deterministic and visible. Same input, same result. Judges want to see the science decide the outcome, not a random number or a black-box AI. Read the rule card out loud. [14:00]">
+  <h2 class="sign" style="--shade: var(--blue)">Step 2 · Response: rules anyone can read</h2>
+  <div class="board white" style="margin-right: 48px;">
+    <h3>A rule is one line of cause and effect</h3>
+    <p>Same choice, same result, every time. No dice, no black-box AI.</p>
+    <p>If the player can't predict the rule, they can't plan, so they can't really choose.</p>
+  </div>
+  <div class="seam"></div>
+  <div class="board blue" style="margin-left: 48px;">
+    <h3>Rule card</h3>
+    <ul class="plain">
+      <li>Heaters on → power −25, warmth +25</li>
+      <li>Every sol in the storm → warmth −20, oxygen −20</li>
+      <li>Any meter hits 0 → mission over</li>
+    </ul>
+  </div>
+</section>
+
+<section class="slide" data-section="2" data-title="Step 3: fast feedback" style="grid-template-rows: auto 1fr;" data-notes="Feedback within a second, in three channels at once: colour, sound, numbers. Point out the meters from the Mars slide changed colour. [16:00]">
+  <h2 class="sign" style="--shade: var(--blue)">Step 3 · Feedback: show it within a second</h2>
+  <div class="cols-3" style="align-self: start;">
+    <div class="board red"><h3>Colour</h3><p>Green is safe. Yellow is a warning. Red is trouble. No reading needed.</p></div>
+    <div class="board yellow"><h3>Sound</h3><p>A beep on every change, an alarm before failure.</p></div>
+    <div class="board green"><h3>Numbers</h3><p>Show the exact change: "oxygen −20". Players learn the rules from it.</p></div>
+  </div>
+</section>
+
+<section class="slide re-wrap" data-section="2" data-title="Core loop sandbox" data-notes="Live. Drag the entry angle: the yellow line shows where the capsule is aimed, and the green wedge is the safe corridor. Press Commit and ride along: watch the heat shield and g-load bars, and the radio blackout while plasma wraps the capsule. Then read the three panels left to right: action, response, feedback. Try −4 (skips back to space), −9 (burns up), then −6.5 (parachute and splashdown). Drag the scene to turn it; M mutes the sound. That's the whole loop in one dial. [18:00]">
+  <h2 class="sign" style="--shade: var(--blue)">Try it: one dial, one loop</h2>
+  <div class="rk-stage re-stage">
+    <canvas id="re3d" width="1234" height="431" aria-label="3D view of a capsule entering Earth's atmosphere; Commit flies it to a splashdown, a skip back to space, or a burn-up"></canvas>
+    <div class="rk-hud" aria-hidden="true">
+      <div class="chip rk-goal" id="re-goal">Goal: splash down</div>
+      <div class="chip rk-tele" id="re-tele" hidden></div>
+      <div class="chip re-black" id="re-black" hidden>Radio blackout</div>
+      <div class="rk-count word" id="re-word" hidden></div>
+      <div class="rk-bars" id="re-bars" hidden>
+        <div class="rk-bar"><span id="re-heat-v"></span><i id="re-heat-bar"></i><b>Heat shield</b></div>
+        <div class="rk-bar"><span id="re-g-v"></span><i id="re-g-bar"></i><b>g-load</b></div>
+      </div>
+      <span class="chip rk-label" id="re-l-air">Atmosphere edge</span>
+      <span class="chip rk-label" id="re-l-safe">Safe corridor</span>
+      <div class="chip rk-sound" id="re-sound" hidden>Sound off · M</div>
+    </div>
+  </div>
+  <div class="board white re-dial">
+    <label for="entry">Capsule entry angle</label>
+    <output id="entry-out" class="angle" for="entry">−4.0°</output>
+    <input id="entry" type="range" min="-10" max="-3" step="0.5" value="-4">
+    <button class="paint-btn solid" id="entry-go">Commit</button>
+    <p class="synthetic">Drawn 6× steeper. Drag to turn.</p>
+  </div>
+  <div class="cols-3">
+    <div class="board yellow"><h3>Action</h3><p id="re-action">Pick an angle and commit.</p></div>
+    <div class="board blue"><h3>Response</h3><p id="re-response">The rules will run here.</p></div>
+    <div class="board white repaintable" id="re-feedback"><h3>Feedback</h3><p id="re-feedback-text">You'll see the outcome here.</p><p class="synthetic">Simplified corridor: −5.5° to −7.5°.</p></div>
+  </div>
+</section>
+
+<section class="slide pair" data-section="2" data-title="Find your variables" data-notes="How to read a 50-page challenge: look for the things that run out, the things that threaten, and the goal. Those are your variables. Walk the highlighted words. [21:00]">
+  <h2 class="sign" style="--shade: var(--blue)">Turn a challenge into variables</h2>
+  <div class="board white" style="margin-right: 48px;">
+    <h3>The challenge text</h3>
+    <p>"Design a base that keeps a crew alive at the lunar south pole: <mark style="background: var(--yellow);">power</mark> is limited during the long <mark style="background: var(--yellow);">night</mark>, <mark style="background: var(--yellow);">temperatures</mark> drop sharply, and <mark style="background: var(--yellow);">oxygen</mark> must be produced on site."</p>
+    <p class="synthetic">Example written for this workshop.</p>
+  </div>
+  <div class="seam"></div>
+  <div class="board green" style="margin-left: 48px;">
+    <h3>What to pull out</h3>
+    <ul class="plain">
+      <li><b>Resources</b> that run out: power, oxygen</li>
+      <li><b>Threats</b> that push back: cold, the long night</li>
+      <li><b>The goal</b>: survive until sunrise</li>
+    </ul>
+  </div>
+</section>
+
+<section class="slide" data-section="2" data-title="2 to 4 variables" style="grid-template-rows: auto 1fr;" data-notes="One variable is a quiz. Five or more and the team drowns by Saturday night. Three is the sweet spot for 48 hours. [23:00]">
+  <h2 class="sign" style="--shade: var(--blue)">Keep it to 2–4 variables</h2>
+  <div class="cols-3" style="align-self: start;">
+    <div class="board white"><h3>1 variable</h3><p>Too shallow. There's nothing to trade off, so it's a quiz.</p></div>
+    <div class="board green"><h3>3 variables</h3><p>The sweet spot. Enough tension for real choices, small enough to finish in 48 hours.</p></div>
+    <div class="board red"><h3>5+ variables</h3><p>Scope death. You'll spend Saturday balancing and ship nothing Sunday.</p></div>
+  </div>
+</section>
+
+<section class="slide rk-wrap" data-section="2" data-title="Constraint simulator" data-notes="Too heavy to fly? The room picks a satellite, fuel and engine, then you press Launch (or L). Two ways to fail. Too much fuel and the rocket is heavier than its push: it shakes on the pad and never leaves. Too little and it falls back and crashes. Watch the push and weight bars: push has to beat weight, and barely beating it wastes fuel fighting gravity. A bigger engine pushes harder but weighs more. Heavier satellites earn more stars: 3 tons is hard. Maxing every slider gets you stuck on the pad. That is the design lesson: real constraints pull against each other, so there is no single winning move. The rules are real physics; the numbers are teaching numbers. [25:00]">
+  <h2 class="sign" style="--shade: var(--blue)">Too heavy to fly?</h2>
+  <p class="lead rk-lead">Get the heaviest satellite to orbit. Too little fuel: you fall back. Too much: stuck on the pad.</p>
+  <div class="rk-stage">
+    <canvas id="rk3d" width="1064" height="655" aria-label="3D rocket on a launch pad; Launch flies it to orbit, back to the ground, or nowhere"></canvas>
+    <div class="rk-hud" aria-hidden="true">
+      <div class="chip rk-goal" id="rk-goal">Orbit · 200 km · 4,500 m/s</div>
+      <div class="chip rk-tele" id="rk-tele" hidden></div>
+      <div class="rk-stars" id="rk-stars" hidden></div>
+      <div class="rk-count" id="rk-count" hidden></div>
+      <div class="rk-bars" id="rk-bars">
+        <div class="rk-bar"><span id="rk-push-v"></span><i id="rk-push-bar"></i><b>Push</b></div>
+        <div class="rk-bar weight"><span id="rk-weight-v"></span><i id="rk-weight-bar"></i><b>Weight</b></div>
+      </div>
+      <span class="chip rk-label" id="rk-l-sat">Satellite</span>
+      <span class="chip rk-label" id="rk-l-tank">Fuel tank</span>
+      <span class="chip rk-label" id="rk-l-eng">Engine</span>
+      <div class="chip rk-sound" id="rk-sound" hidden>Sound off · M</div>
+    </div>
+  </div>
+  <div class="stack rk-side">
+    <div class="board white rk-sliders">
+      <div class="slider"><label for="sat">Satellite <span class="small">(heavier = more stars)</span></label><input id="sat" type="range" min="500" max="5000" step="250" value="2000"><output id="sat-out" for="sat"></output></div>
+      <div class="slider"><label for="fuel">Fuel <span class="small">(+8% tank weight)</span></label><input id="fuel" type="range" min="2000" max="60000" step="1000" value="20000"><output id="fuel-out" for="fuel"></output></div>
+      <div class="slider"><label for="push">Engine push <span class="small">(bigger = heavier)</span></label><input id="push" type="range" min="50" max="600" step="10" value="300"><output id="push-out" for="push"></output></div>
+      <button class="paint-btn solid" id="rk-go">Launch</button>
+    </div>
+    <div class="board blue repaintable" id="dv-board">
+      <p class="sign md" id="dv">Ready?</p>
+      <p id="dv-msg"></p>
+      <p class="synthetic">Real rules, teaching numbers.</p>
+    </div>
+  </div>
+</section>
+
+<section class="slide" data-section="2" data-title="The fidelity ladder" style="grid-template-rows: auto 1fr;" data-notes="Real science is complex; games need rules players can see. Teams that try to code differential equations in 48 hours never ship. Climb to the top step: keep the science's truth, simplify its maths into states like safe, warning, critical. [27:00]">
+  <h2 class="sign" style="--shade: var(--blue)">Climb the fidelity ladder</h2>
+  <div class="ladder">
+    <div class="board white"><h3>Raw science</h3><p>Datasets and papers. True, but no player can act on them.</p></div>
+    <div class="board red"><h3>Full physics</h3><p>Exact equations. The 48-hour trap: you'll debug maths all weekend.</p></div>
+    <div class="board green"><h3>Game rules</h3><p>The science simplified into clear states: safe, warning, critical. <b>Build here.</b></p></div>
+  </div>
+</section>
+
+<!-- ======================= III. PAST WINNERS (15 MIN) ======================= -->
+
+<section class="slide winner" data-section="3" data-title="Zumorroda-X (Egypt)" data-notes="Section III, 15 minutes. Start with an Egyptian team. Zumorroda-X won the global Art and Technology Award in 2025 with farmer mini-games. Data became events the player adapts to. [30:00]">
+  <div class="board green who">
+    <div><p class="sign lg">Zumorroda-X</p></div>
+    <p class="meta">Egypt · 2025<br>Global winner, Art &amp; Technology Award<br>Challenge: NASA Farm Navigators</p>
+  </div>
+  <div class="seam"></div>
+  <div class="what">
+    <h2 class="sign md" style="--shade: var(--green)">What they built</h2>
+    <p>Mini games where you play a farmer on a journey around the world, adapting to heat waves, flooding and other environmental challenges.</p>
+    <div class="board yellow steal"><h3>Steal this</h3><p>Put the player in someone's shoes. The data arrives as events they must react to.</p></div>
+    <p class="source">Source: NASA, 2025 Space Apps global winners announcement.</p>
+  </div>
+</section>
+
+<section class="slide winner" data-section="3" data-title="TerraTales (Cairo)" data-notes="Another Egyptian winner, from Cairo, a year earlier. Best Storytelling, 2024. An interactive game nudging players toward eco-friendly choices. Consequences are the story. [33:00]">
+  <div class="board red who">
+    <div><p class="sign lg">TerraTales</p></div>
+    <p class="meta">Cairo, Egypt · 2024<br>Global winner, Best Storytelling Award</p>
+  </div>
+  <div class="seam"></div>
+  <div class="what">
+    <h2 class="sign md">What they built</h2>
+    <p>An interactive game that encourages players to make eco-friendly choices, showing the climate outcome of acting or not acting.</p>
+    <div class="board yellow steal"><h3>Steal this</h3><p>Let each choice show its consequence. The story is what the player caused.</p></div>
+    <p class="source">Sources: NASA, 2024 global winners announcement; Universe Magazine.</p>
+  </div>
+</section>
+
+<section class="slide winner" data-section="3" data-title="Eco-Metropolis (UAE)" data-notes="Innovisionaries from Sharjah, Most Inspirational Award 2024. A city-building game: planning and resource decisions. Scarcity creates the choices. [36:00]">
+  <div class="board blue who">
+    <div><p class="sign lg">Eco-Metropolis</p></div>
+    <p class="meta">Team Innovisionaries<br>Sharjah, UAE · 2024<br>Global winner, Most Inspirational Award</p>
+  </div>
+  <div class="seam"></div>
+  <div class="what">
+    <h2 class="sign md" style="--shade: var(--blue)">What they built</h2>
+    <p>A city-building game where players make urban-planning and resource-management decisions.</p>
+    <div class="board yellow steal"><h3>Steal this</h3><p>Scarce resources force real trade-offs. Give the player less than they want.</p></div>
+    <p class="source">Source: NASA, 2024 Space Apps global winners announcement.</p>
+  </div>
+</section>
+
+<section class="slide winner" data-section="3" data-title="PureFlow (Brazil)" data-notes="PureFlow, Brazil, Best Mission Concept 2025. Not a game but a simulation: design a habitat in 3D, then test it against solar storms. Simulations can be test benches. [39:00]">
+  <div class="board yellow who">
+    <div><p class="sign lg">PureFlow</p></div>
+    <p class="meta">Brazil · 2025<br>Global winner, Best Mission Concept Award</p>
+  </div>
+  <div class="seam"></div>
+  <div class="what">
+    <h2 class="sign md">What they built</h2>
+    <p>A platform to design and model a space habitat in 3D, then test it against space-weather threats like solar storms.</p>
+    <div class="board green steal"><h3>Steal this</h3><p>A simulation can be a test bench: build it, stress it, see what breaks.</p></div>
+    <p class="source">Source: NASA, 2025 Space Apps global winners announcement.</p>
+  </div>
+</section>
+
+<section class="slide" data-section="3" data-title="Egypt has done this twice" style="grid-template-rows: auto 1fr;" data-notes="Land the belief. Two Egyptian teams won global awards with games in two years. 2025 winners were picked from 18,860 teams. Then the pattern: a decision, data inside the rules, a finished loop. 'Next year it could be a team in this room.' [42:00]">
+  <h2 class="sign">Egypt has done this twice. With games.</h2>
+  <div class="cols-2" style="align-self: start;">
+    <div class="board black">
+      <p class="sign lg">2 of 20</p>
+      <p>Global winners in 2024–2025 that were Egyptian game teams: TerraTales and Zumorroda-X.</p>
+      <p class="small">2025's ten winners were picked from 18,860 teams. Source: NASA.</p>
+    </div>
+    <div class="board white">
+      <h3>What the winners share</h3>
+      <ul class="plain">
+        <li>The player makes a <b>decision</b></li>
+        <li>NASA data lives <b>inside the rules</b></li>
+        <li>One complete loop, <b>finished</b></li>
+      </ul>
+      <p class="sign sm">Next could be your team.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ======================= IV. PLAYBOOK (15 MIN) ======================= -->
+
+<section class="slide" data-section="4" data-title="Scope traps" style="grid-template-rows: auto 1fr auto;" data-notes="Section IV, 15 minutes. Friday-night ideas that kill Sunday submissions. Ban these four out loud. Then the yellow sign: one screen, one loop, one finished level. [45:00]">
+  <h2 class="sign">Four ideas that kill a 48-hour project</h2>
+  <div class="cols-4">
+    <div class="board red no-sign"><svg viewBox="0 0 100 100" aria-hidden="true"><circle cx="50" cy="50" r="42" fill="none" stroke="#fafaf7" stroke-width="12"/><path d="M22 22l56 56" stroke="#fafaf7" stroke-width="12"/></svg><h3>Open worlds</h3></div>
+    <div class="board red no-sign"><svg viewBox="0 0 100 100" aria-hidden="true"><circle cx="50" cy="50" r="42" fill="none" stroke="#fafaf7" stroke-width="12"/><path d="M22 22l56 56" stroke="#fafaf7" stroke-width="12"/></svg><h3>Multiplayer</h3></div>
+    <div class="board red no-sign"><svg viewBox="0 0 100 100" aria-hidden="true"><circle cx="50" cy="50" r="42" fill="none" stroke="#fafaf7" stroke-width="12"/><path d="M22 22l56 56" stroke="#fafaf7" stroke-width="12"/></svg><h3>Custom 3D pipelines</h3></div>
+    <div class="board red no-sign"><svg viewBox="0 0 100 100" aria-hidden="true"><circle cx="50" cy="50" r="42" fill="none" stroke="#fafaf7" stroke-width="12"/><path d="M22 22l56 56" stroke="#fafaf7" stroke-width="12"/></svg><h3>Realistic physics engines</h3></div>
+  </div>
+  <div class="board yellow" style="padding: 30px 52px;"><p class="sign md">Instead: one screen, one loop, one finished level.</p></div>
+</section>
+
+<section class="slide pair" data-section="4" data-title="The winning stack" style="grid-template-rows: auto auto; align-content: start;" data-notes="Pick the tool your team already knows. Browser is fastest to share with judges. Skip project-management tools: one shared doc with your variables and rules is enough. [50:00]">
+  <h2 class="sign">Use the tool you already know</h2>
+  <div class="board white" style="margin-right: 48px;">
+    <h3>Good picks for 48 hours</h3>
+    <ul class="plain">
+      <li><b>Browser</b> (HTML + canvas): judges click a link and play</li>
+      <li><b>Godot</b>: light, free, fast 2D</li>
+      <li><b>Twine</b>: choice stories, no code</li>
+      <li><b>Unity</b>: only if your team already knows it</li>
+    </ul>
+  </div>
+  <div class="seam"></div>
+  <div class="board yellow" style="margin-left: 48px;">
+    <p class="sign md">One rule: track your variables in one shared doc.</p>
+    <p>Every number and every rule, in one place the whole team can edit.</p>
+  </div>
+</section>
+
+<section class="slide pair" data-section="4" data-title="AI as your copilot" data-notes="AI is a force multiplier for code and placeholder art. It's dangerous for science: it will invent numbers confidently. Every number in your rules must trace back to a NASA source. [55:00]">
+  <h2 class="sign">AI: a fast copilot, a bad scientist</h2>
+  <div class="board green" style="margin-right: 48px;">
+    <h3>Use AI for</h3>
+    <ul class="plain">
+      <li>Writing state and rule code</li>
+      <li>Balancing numbers so it's not too easy</li>
+      <li>Placeholder art and sounds</li>
+    </ul>
+  </div>
+  <div class="seam"></div>
+  <div class="board red" style="margin-left: 48px;">
+    <h3>Never for</h3>
+    <ul class="plain">
+      <li>Inventing the science</li>
+      <li>Numbers you can't trace to a NASA source</li>
+    </ul>
+    <p><b>Check every number it gives you.</b></p>
+  </div>
+</section>
+
+<!-- ======================= V. LIVE DEMO (15 MIN) ======================= -->
+
+<section class="slide" data-section="5" data-title="The 4-step recipe" style="grid-template-rows: auto 1fr;" data-notes="Section V, 15 minutes. Before playing, walk the recipe on the rover game: goal, three variables, one decision, feedback. This is exactly what they'll do in the hands-on. [60:00]">
+  <h2 class="sign">The recipe, on a Mars rover</h2>
+  <div class="cols-4">
+    <div class="board yellow"><h3>1 · Goal</h3><p>Send 3 rock samples home before the dust storm hits.</p></div>
+    <div class="board blue"><h3>2 · Variables</h3><p>Battery, dust on the solar panels, samples.</p></div>
+    <div class="board red"><h3>3 · Decision</h3><p>Drive, drill a rock, or spend a day cleaning the panels?</p></div>
+    <div class="board green"><h3>4 · Feedback</h3><p>Meters repaint, dust piles up, the storm creeps closer.</p></div>
+  </div>
+</section>
+
+<section class="slide dust-wrap" data-section="5" data-title="Live: Dust Storm Dispatch" data-notes="Live demo, the room plays. Each sol the room votes and shouts: 1 drive, 2 sample, 3 clean. You press the number key. Let them rush the first game; they usually run the battery flat as dust piles on the panels. Press R to reset. Before game two ask: when should you clean? Answer: when dust turns yellow, before you need the power. Dust devils are real: they cleaned Spirit and Opportunity's panels. Opportunity went silent in the 2018 global dust storm. Stars: 3 for 40% battery left, 2 for 20%. [63:00]">
+  <h2 class="sign">Three rocks home before the storm</h2>
+  <canvas id="dust" width="1332" height="626" aria-label="Dust Storm Dispatch, a Mars rover game"></canvas>
+  <div class="stack dust-side">
+    <div class="readout"><div class="v" id="ds-sol">1 / 12</div><div class="k" id="ds-storm">Sol · storm in 12</div></div>
+    <div class="readout repaintable" id="ds-bat-box"><div class="v" id="ds-bat">100%</div><div class="k">Battery</div></div>
+    <div class="readout repaintable" id="ds-dust-box"><div class="v" id="ds-dust">0%</div><div class="k">Dust on panels</div></div>
+    <div class="readout repaintable" id="ds-sci-box"><div class="v" id="ds-sci">0 / 3</div><div class="k">Rock samples</div></div>
+    <p class="synthetic">Teaching numbers, not mission data.</p>
+  </div>
+  <div class="dust-bar">
+    <button class="paint-btn solid" data-ds="drive">1 · Drive</button>
+    <button class="paint-btn solid" data-ds="sample">2 · Sample</button>
+    <button class="paint-btn solid" data-ds="clean">3 · Clean panels</button>
+    <p id="ds-msg" aria-live="polite"></p>
+    <button class="paint-btn" id="ds-reset">Reset</button>
+  </div>
+</section>
+
+<!-- ======================= VI. HANDS-ON (35 MIN) ======================= -->
+
+<section class="slide" data-section="6" data-title="Your turn" style="grid-template-rows: auto auto 1fr;" data-notes="Section VI, 35 minutes. Form teams now. 20 minutes design, 10 minutes swap, 5 minutes revise. In the swap, the other team plays your rules on paper, no code. [75:00]">
+  <h2 class="sign" style="--shade: var(--blue)">Your turn: design a one-minute game</h2>
+  <p class="lead" style="max-width: none;">Pick any NASA challenge. Your team writes one spec.</p>
+  <div class="cols-3">
+    <div class="board blue"><p class="sign lg">20 min</p><h3>Design</h3><p>Fill in the template on the next slide.</p></div>
+    <div class="board yellow"><p class="sign lg">10 min</p><h3>Swap</h3><p>Trade specs with the next team. They play your rules on paper.</p></div>
+    <div class="board green"><p class="sign lg">5 min</p><h3>Revise</h3><p>Fix the one rule they found confusing.</p></div>
+  </div>
+</section>
+
+<section class="slide template" data-section="6" data-title="The spec template" data-notes="Leave this up. Press Copy and paste it in the event channel so teams start from the same structure. Walk the lunar-night example in 60 seconds. [77:00]">
+  <h2 class="sign" style="--shade: var(--blue)">The one-minute spec</h2>
+  <div class="board white" id="tpl">
+    <h3>1 · Goal (one sentence)</h3><p>Keep the lunar crew alive through a 14-day night.</p>
+    <h3>2 · Three variables</h3>
+    <ul class="plain"><li>Battery: 0–100 kWh, −5 per day</li><li>Heat: −50 to +25 °C, safe above −10</li><li>Oxygen: 0–100%, −2% per day</li></ul>
+  </div>
+  <div class="board white">
+    <h3>3 · Two decisions</h3>
+    <ul class="plain"><li>Run heaters: heat +, battery −10</li><li>Run oxygen recycler: oxygen +, battery −15</li></ul>
+    <h3>4 · Rule table</h3>
+    <ul class="plain"><li>Battery 0 → heaters off, heat −10 per day</li><li>Heat below −20 for 3 days → mission lost</li></ul>
+    <h3>5 · End state</h3><p>Day 14, all meters above 0 → crew survives.</p>
+  </div>
+  <div class="btn-row" style="grid-column: 1 / -1; align-items: center;">
+    <button class="paint-btn solid" id="copy-tpl">Copy blank template</button>
+    <span class="small" id="copy-msg" role="status"></span>
+  </div>
+</section>
+
+<section class="slide" data-section="6" data-title="Sprint clock" style="grid-template-rows: auto 1fr auto;" data-notes="Start the clock and leave it on screen. Walk between teams. When it hits zero, switch to Swap, then Revise. [78:00]">
+  <h2 class="sign" style="--shade: var(--blue)">Hands on laptops</h2>
+  <div class="board blue repaintable" id="clock-board" style="align-items: center; justify-content: center;">
+    <p class="clock" id="clock" aria-live="off">20:00</p>
+    <h3 id="clock-phase">Design</h3>
+  </div>
+  <div class="btn-row">
+    <button class="paint-btn solid" id="clock-start">Start</button>
+    <button class="paint-btn" data-phase="0">Design 20</button>
+    <button class="paint-btn" data-phase="1">Swap 10</button>
+    <button class="paint-btn" data-phase="2">Revise 5</button>
+  </div>
+</section>
+
+<!-- ======================= VII. WRAP-UP (10 MIN) ======================= -->
+
+<section class="slide" data-section="7" data-title="Done & 5 rules" style="grid-template-columns: 1.6fr 1fr; grid-template-rows: auto 1fr;" data-notes="Section VII, 10 minutes. Done means one playable scenario with the core data working. Graphics come last. Read the five rules. Point at the QR for mentorship during the hackathon, then open Q&A. [110:00]">
+  <h2 class="sign" style="grid-column: 1 / -1; --shade: var(--green)">Done = one level that plays. Graphics last.</h2>
+  <div class="board white">
+    <h3>The 5 golden rules</h3>
+    <ul class="plain">
+      <li>Design the decisions first</li>
+      <li>Put the science inside the rules</li>
+      <li>Give feedback within a second</li>
+      <li>Simplify the science, openly</li>
+      <li>Ship one complete loop</li>
+    </ul>
+  </div>
+  <div class="board green" style="align-items: flex-start;">
+    <h3>Ask me anything</h3>
+    <div class="qr" style="width: 220px; height: 220px;"><img src="vendor/qr-links.svg" alt="QR code: marwan0.github.io, all my links"></div>
+    <p class="small" style="font-size: 30px;">marwan0.github.io<br>marwan_ayad@live.com<br>LinkedIn: in/marwan-ayyad<br>YouTube: @Marwan-Tech<br>Facebook: @marwan.ayyad.7</p>
+  </div>
+</section>
+
+<div id="notes" class="overlay" role="dialog" aria-label="Speaker notes"><p id="notes-text"></p></div>
+<div id="grid" class="overlay" role="dialog" aria-label="All slides"><ol id="grid-list"></ol></div>
+
+<footer id="rail">
+  <span>Marwan Ayyad · NASA Space Apps Cairo 2026</span>
+  <span class="sec"><span class="chip" id="rail-chip"></span><span id="rail-sec"></span></span>
+  <span class="right"><span id="rail-clock" title="Talk time">0:00</span><span class="count" id="rail-count"></span></span>
+</footer>
+</div>
+
+<div id="presenter" aria-live="polite">
+  <div>
+    <h1 id="p-title"></h1>
+    <p class="notes" id="p-notes"></p>
+  </div>
+  <div class="side">
+    <div><div class="big" id="p-count"></div>slide</div>
+    <div><div class="big" id="p-clock">0:00</div>talk time · 120 min planned</div>
+    <div class="next" id="p-next"></div>
+    <div>← → move both screens · this window controls the deck</div>
+  </div>
+</div>
+
+<script src="vendor/three.min.js"></script>
+<script>
+(() => {
+  const SECTIONS = {
+    1: { name: "I · Why games", min: 10, color: "var(--red)" },
+    2: { name: "II · The core loop", min: 20, color: "var(--blue)" },
+    3: { name: "III · Past winners", min: 15, color: "var(--green)" },
+    4: { name: "IV · 48-hour playbook", min: 15, color: "var(--yellow)" },
+    5: { name: "V · Live demo", min: 15, color: "var(--red)" },
+    6: { name: "VI · Hands-on", min: 35, color: "var(--blue)" },
+    7: { name: "VII · Wrap-up", min: 10, color: "var(--green)" },
+  };
+  const slides = [...document.querySelectorAll(".slide")];
+  const DUST = slides.findIndex(s => s.querySelector("#dust"));
+  const $ = id => document.getElementById(id);
+  const channel = "BroadcastChannel" in window ? new BroadcastChannel("space-apps-deck") : null;
+  const isPresenter = new URLSearchParams(location.search).has("presenter");
+  let current = 0;
+  let talkStart = null;
+
+  const fmt = s => `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`;
+
+  // Paint a panel to a new colour with the signature wipe
+  function repaint(el, color) {
+    const target = getComputedStyle(document.documentElement).getPropertyValue(color.slice(4, -1)).trim() || color;
+    if (el.dataset.paint === target) return;
+    el.dataset.paint = target;
+    el.style.setProperty("--to", target);
+    el.classList.remove("wipe"); void el.offsetWidth; el.classList.add("wipe");
+    const done = () => { el.style.background = target; el.classList.remove("wipe"); };
+    matchMedia("(prefers-reduced-motion: reduce)").matches ? done() : setTimeout(done, 230);
+  }
+  const inkFor = color => (color === "var(--yellow)" || color === "var(--enamel)") ? "var(--black)" : "var(--enamel)";
+  const still = () => matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const PAINT = { red: "#d7261e", yellow: "#ffd100", green: "#0a7d3b", blue: "#1846a3", black: "#111111", enamel: "#fafaf7" };
+
+  // ---------- Navigation ----------
+  function show(i, fromChannel) {
+    i = Math.max(0, Math.min(slides.length - 1, i));
+    if (i !== current && talkStart === null) talkStart = Date.now();
+    current = i;
+    slides.forEach((s, n) => s.classList.toggle("on", n === i));
+    slides[i].classList.remove("enter"); void slides[i].offsetWidth; slides[i].classList.add("enter");
+    const s = slides[i], sec = SECTIONS[s.dataset.section];
+    $("rail-sec").textContent = `${sec.name} · ${sec.min} min`;
+    $("rail-chip").style.background = sec.color;
+    $("rail-count").textContent = `${String(i + 1).padStart(2, "0")} / ${slides.length}`;
+    $("notes-text").textContent = s.dataset.notes;
+    document.querySelectorAll("#grid-list button").forEach((b, n) => b.setAttribute("aria-current", n === i));
+    if (location.hash !== `#${i + 1}`) history.replaceState(null, "", `#${i + 1}`);
+    renderPresenter();
+    if (channel && !fromChannel) channel.postMessage({ slide: i, talkStart });
+  }
+
+  function renderPresenter() {
+    if (!isPresenter) return;
+    const s = slides[current], next = slides[current + 1];
+    $("p-title").textContent = s.dataset.title;
+    $("p-notes").textContent = s.dataset.notes;
+    $("p-count").textContent = `${current + 1} / ${slides.length}`;
+    $("p-next").textContent = next ? `Next: ${next.dataset.title}` : "Last slide";
+  }
+
+  if (channel) channel.onmessage = e => {
+    if (typeof e.data.talkStart === "number") talkStart = e.data.talkStart;
+    if (typeof e.data.slide === "number") show(e.data.slide, true);
+  };
+
+  function toggle(id) {
+    const el = $(id), open = !el.classList.contains("open");
+    document.querySelectorAll(".overlay").forEach(o => o.classList.remove("open"));
+    el.classList.toggle("open", open);
+  }
+
+  // Paint order for the entrance: signs and boards in reading order, capped so no slide waits long
+  slides.forEach(s => s.querySelectorAll(".sign, .board, canvas, .seam, .readout").forEach((el, n) => {
+    el.classList.add("paint-in"); el.style.setProperty("--i", Math.min(n, 6));
+  }));
+
+  // Slide grid built from the slides themselves, so titles can't drift
+  slides.forEach((s, n) => {
+    const li = document.createElement("li"), b = document.createElement("button");
+    b.innerHTML = `<span class="n">${n + 1}</span><span class="t"></span>`;
+    b.querySelector(".t").textContent = s.dataset.title;
+    b.onclick = () => { show(n); toggle("grid"); };
+    li.appendChild(b); $("grid-list").appendChild(li);
+  });
+
+  addEventListener("keydown", e => {
+    if (e.target.matches?.("input, textarea")) return;
+    if (current === DUST && !e.repeat) {
+      const move = { 1: "drive", 2: "sample", 3: "clean" }[e.key];
+      if (move) return dsMove(move);
+      if (e.key === "r" || e.key === "R") return dsReset();
+    }
+    switch (e.key) {
+      case "ArrowRight": case "ArrowDown": case "PageDown": case " ": e.preventDefault(); show(current + 1); break;
+      case "ArrowLeft": case "ArrowUp": case "PageUp": case "Backspace": e.preventDefault(); show(current - 1); break;
+      case "Home": show(0); break;
+      case "End": show(slides.length - 1); break;
+      case "n": case "N": toggle("notes"); break;
+      case "g": case "G": toggle("grid"); break;
+      case "f": case "F": document.fullscreenElement ? document.exitFullscreen() : document.documentElement.requestFullscreen().catch(() => {}); break;
+      case "p": case "P": open(`${location.pathname}?presenter#${current + 1}`, "presenter", "width=1200,height=760"); break;
+      case "Escape": document.querySelectorAll(".overlay").forEach(o => o.classList.remove("open")); break;
+    }
+  });
+
+  function fit() {
+    const scale = Math.min(innerWidth / 1920, innerHeight / 1080);
+    $("stage").style.transform = `scale(${scale})`;
+  }
+  addEventListener("resize", fit);
+
+  setInterval(() => {
+    const t = talkStart === null ? "0:00" : fmt(Math.floor((Date.now() - talkStart) / 1000));
+    $("rail-clock").textContent = t;
+    if (isPresenter) $("p-clock").textContent = t;
+  }, 1000);
+
+  // ---------- Mars: dashboard vs simulation ----------
+  const mars = { power: 60, warmth: 60, oxygen: 60, sol: 1, over: false };
+  const MOVES = {
+    heat:   { power: -25, warmth: 25, oxygen: 0, says: "Heaters on: power −25, warmth +25" },
+    oxygen: { power: -25, warmth: 0, oxygen: 25, says: "Oxygen plant on: power −25, oxygen +25" },
+    rest:   { power: 20, warmth: 0, oxygen: 0, says: "Powered down: batteries recover +20" },
+  };
+  const level = v => v > 50 ? "var(--green)" : v > 25 ? "var(--yellow)" : "var(--red)";
+  function drawMars() {
+    for (const k of ["power", "warmth", "oxygen"]) {
+      const fill = document.querySelector(`[data-m="${k}"]`);
+      fill.style.width = `${mars[k]}%`;
+      fill.style.background = level(mars[k]);
+      document.querySelector(`[data-n="${k}"]`).textContent = mars[k];
+    }
+    document.querySelectorAll("#mars-moves [data-move]").forEach(b => b.disabled = mars.over);
+  }
+  function marsMove(key) {
+    if (mars.over) return;
+    const m = MOVES[key];
+    // Storm baseline each sol: weak sun +5 power, cold and dust drain warmth and oxygen
+    const clamp = v => Math.max(0, Math.min(100, v));
+    mars.power = clamp(mars.power + 5 + m.power);
+    mars.warmth = clamp(mars.warmth - 20 + m.warmth);
+    mars.oxygen = clamp(mars.oxygen - 20 + m.oxygen);
+    const dead = ["power", "warmth", "oxygen"].find(k => mars[k] === 0);
+    if (dead) {
+      mars.over = true;
+      $("mars-msg").textContent = `Sol ${mars.sol}: ${m.says}. ${dead[0].toUpperCase() + dead.slice(1)} hit zero. Mission lost.`;
+      $("mars-head").textContent = "Mission lost";
+      repaint($("mars"), "var(--red)");
+    } else if (mars.sol === 3) {
+      mars.over = true;
+      $("mars-msg").textContent = `Sol 3: ${m.says}. The storm clears. Crew survives.`;
+      $("mars-head").textContent = "Crew survives";
+      repaint($("mars"), "var(--green)");
+    } else {
+      $("mars-msg").textContent = `Sol ${mars.sol}: ${m.says}. Storm drains warmth −20, oxygen −20.`;
+      mars.sol++;
+      $("mars-head").textContent = `Storm: ${4 - mars.sol} sol${mars.sol === 3 ? "" : "s"} left`;
+    }
+    drawMars();
+  }
+  function marsReset() {
+    Object.assign(mars, { power: 60, warmth: 60, oxygen: 60, sol: 1, over: false });
+    $("mars-head").textContent = "A simulation: 3 sols of storm";
+    $("mars-msg").textContent = "Each sol, the storm drains warmth and oxygen. Pick one move:";
+    repaint($("mars"), "var(--blue)");
+    drawMars();
+  }
+  document.querySelectorAll("#mars-moves [data-move]").forEach(b => b.onclick = () => marsMove(b.dataset.move));
+  $("mars-reset").onclick = marsReset;
+  drawMars();
+
+  // ---------- three.js kit: toon paint with ink outlines, particle pools, HUD chips, sound ----------
+  // Sound effects, synthesized with Web Audio so there is nothing to load. M mutes.
+  const sfx = (() => {
+    let ac = null, muted = false, engine = null;
+    const ctx = () => { ac ||= new (window.AudioContext || window.webkitAudioContext)(); if (ac.state === "suspended") ac.resume(); return ac; };
+    const noise = () => {
+      const a = ctx(), buf = a.createBuffer(1, a.sampleRate * 2, a.sampleRate), d = buf.getChannelData(0);
+      for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
+      const n = a.createBufferSource(); n.buffer = buf; n.loop = true; return n;
+    };
+    function tone(freq, start, dur, type, vol, toFreq) {
+      const a = ctx(), o = a.createOscillator(), g = a.createGain(), t = a.currentTime + start;
+      o.type = type; o.frequency.setValueAtTime(freq, t);
+      if (toFreq) o.frequency.exponentialRampToValueAtTime(toFreq, t + dur);
+      g.gain.setValueAtTime(vol, t); g.gain.exponentialRampToValueAtTime(0.001, t + dur);
+      o.connect(g).connect(a.destination); o.start(t); o.stop(t + dur + 0.05);
+    }
+    return {
+      get muted() { return muted; },
+      toggle() { muted = !muted; if (muted) this.engineOff(0.1); },
+      beep(go) { if (!muted) tone(go ? 988 : 659, 0, go ? 0.45 : 0.16, "square", 0.1); },
+      engineOn(power) {
+        if (muted || engine) return;
+        const a = ctx(), n = noise(), lp = a.createBiquadFilter(), g = a.createGain(), o = a.createOscillator(), og = a.createGain();
+        lp.type = "lowpass"; lp.frequency.value = 300 + power * 500;
+        g.gain.setValueAtTime(0.001, a.currentTime); g.gain.exponentialRampToValueAtTime(0.55, a.currentTime + 0.5);
+        o.type = "sawtooth"; o.frequency.value = 34 + power * 22; og.gain.value = 0.12;
+        n.connect(lp).connect(g).connect(a.destination); o.connect(og).connect(g);
+        n.start(); o.start(); engine = { n, o, g, lp };
+      },
+      engineLevel(x) { if (engine) engine.lp.frequency.setTargetAtTime(180 + x * 900, ctx().currentTime, 0.25); },
+      engineOff(fade = 0.5) {
+        if (!engine) return;
+        const a = ctx(), { n, o, g } = engine, t = a.currentTime;
+        engine = null;
+        g.gain.cancelScheduledValues(t); g.gain.setValueAtTime(Math.max(0.001, g.gain.value), t); g.gain.exponentialRampToValueAtTime(0.001, t + fade);
+        n.stop(t + fade + 0.05); o.stop(t + fade + 0.05);
+      },
+      boom() {
+        if (muted) return;
+        const a = ctx(), n = noise(), lp = a.createBiquadFilter(), g = a.createGain(), t = a.currentTime;
+        lp.type = "lowpass"; lp.frequency.setValueAtTime(3500, t); lp.frequency.exponentialRampToValueAtTime(70, t + 1.8);
+        g.gain.setValueAtTime(1, t); g.gain.exponentialRampToValueAtTime(0.001, t + 2);
+        n.connect(lp).connect(g).connect(a.destination); n.start(t); n.stop(t + 2.1);
+        tone(120, 0, 1.3, "sine", 0.7, 28);
+      },
+      splash() {
+        if (muted) return;
+        const a = ctx(), n = noise(), bp = a.createBiquadFilter(), g = a.createGain(), t = a.currentTime;
+        bp.type = "bandpass"; bp.frequency.setValueAtTime(2200, t); bp.frequency.exponentialRampToValueAtTime(300, t + 0.7);
+        g.gain.setValueAtTime(0.8, t); g.gain.exponentialRampToValueAtTime(0.001, t + 0.8);
+        n.connect(bp).connect(g).connect(a.destination); n.start(t); n.stop(t + 0.85);
+      },
+      whistle() { if (!muted) tone(1500, 0, 1.8, "sine", 0.05, 260); },
+      separate() { if (!muted) { tone(260, 0, 0.18, "square", 0.12, 80); tone(1200, 0.05, 0.12, "triangle", 0.06); } },
+      sad() { if (!muted) [392, 370, 349, 330].forEach((f, i) => tone(f, 0.3 + i * 0.34, i === 3 ? 1 : 0.32, "sawtooth", 0.08, i === 3 ? 280 : 0)); },
+      win() { if (!muted) [523, 659, 784, 1047, 1319].forEach((f, i) => tone(f, i * 0.11, i === 4 ? 0.9 : 0.22, "triangle", 0.18)); },
+    };
+  })();
+
+  // A WebGL scene on `canvas` around an Earth of radius R, or null when three.js or WebGL is missing
+  function toonKit(canvas, fov, far, R) {
+    const T = window.THREE;
+    if (!T) return null;
+    let renderer;
+    try { renderer = new T.WebGLRenderer({ canvas, antialias: true }); } catch { return null; }
+    const W = canvas.width, H = canvas.height;
+    renderer.setPixelRatio(1); renderer.setSize(W, H, false);
+    const scene = new T.Scene(), cam = new T.PerspectiveCamera(fov, W / H, 0.1, far);
+    scene.add(new T.AmbientLight(0xffffff, 0.55));
+    const sun = new T.DirectionalLight(0xffffff, 0.85); sun.position.set(-80, 260, 120); scene.add(sun);
+    const ramp = new T.DataTexture(new Uint8Array([95, 175, 255]), 3, 1, T.RedFormat);
+    ramp.minFilter = ramp.magFilter = T.NearestFilter; ramp.needsUpdate = true;
+    const paint = c => new T.Color(PAINT[c] ?? c);
+    const toon = (c, o = {}) => new T.MeshToonMaterial({ color: paint(c), gradientMap: ramp, ...o });
+    const inkMat = new T.MeshBasicMaterial({ color: PAINT.black, side: T.BackSide });
+    const inked = (geo, mat, k = 1.07) => { const m = new T.Mesh(geo, mat), o = new T.Mesh(geo, inkMat); o.scale.setScalar(k); m.add(o); return m; };
+    const v3 = (x = 0, y = 0, z = 0) => new T.Vector3(x, y, z);
+    const rndDir = () => v3(Math.random() - .5, Math.random() - .5, Math.random() - .5).normalize();
+
+    // Low-poly Earth: land(x, y, z, noise) picks the land faces, the rest is sea
+    function earth(land) {
+      const geo = new T.IcosahedronGeometry(R, 24), ep = geo.attributes.position, cols = [];
+      for (let i = 0; i < ep.count; i += 3) {
+        const x = (ep.getX(i) + ep.getX(i + 1) + ep.getX(i + 2)) / 3, y = (ep.getY(i) + ep.getY(i + 1) + ep.getY(i + 2)) / 3, z = (ep.getZ(i) + ep.getZ(i + 1) + ep.getZ(i + 2)) / 3;
+        const n = Math.sin(x * .031 + 1) + Math.sin(y * .027 + z * .012) + Math.sin(z * .035 - x * .01 + 2);
+        const c = paint(land(x, y, z, n) ? (n > 1.9 ? "yellow" : "green") : "blue");
+        for (let k = 0; k < 3; k++) cols.push(c.r, c.g, c.b);
+      }
+      geo.setAttribute("color", new T.Float32BufferAttribute(cols, 3));
+      return new T.Mesh(geo, toon(0xffffff, { vertexColors: true, flatShading: true }));
+    }
+    const puff = new T.IcosahedronGeometry(1, 1), cloudMat = toon("enamel", { flatShading: true });
+    function cloud() {
+      const g = new T.Group();
+      for (let k = 0; k < 4; k++) { const m = new T.Mesh(puff, cloudMat); m.scale.setScalar(1.5 + (k % 2) * 0.9); m.position.set(k * 1.6 - 2.4, (k % 2) * 0.6, (k % 3) * 0.7); g.add(m); }
+      return g;
+    }
+    function stars(r) {
+      const pts = [];
+      for (let i = 0; i < 900; i++) { const v = rndDir().multiplyScalar(r); pts.push(v.x, v.y, v.z); }
+      const geo = new T.BufferGeometry(); geo.setAttribute("position", new T.Float32BufferAttribute(pts, 3));
+      return new T.Points(geo, new T.PointsMaterial({ color: PAINT.enamel, size: 2.5, sizeAttenuation: false, transparent: true, opacity: 0 }));
+    }
+
+    // Particles: flat-painted puffs. Fire glows (unlit), smoke and debris take the toon light.
+    function pool(mat, n, drag) {
+      const m = new T.InstancedMesh(new T.IcosahedronGeometry(1, 0), mat, n);
+      m.instanceMatrix.setUsage(T.DynamicDrawUsage); m.instanceColor = new T.InstancedBufferAttribute(new Float32Array(n * 3), 3);
+      m.count = 0; m.frustumCulled = false; scene.add(m);
+      return { m, n, drag, list: [] };
+    }
+    function emit(sys, q) {
+      if (sys.list.length < sys.n) sys.list.push({ age: 0, grav: 0, drag: sys.drag, ...q, c: paint(q.c), fade: q.fade && paint(q.fade), rot: new T.Euler(Math.random() * 6, Math.random() * 6, 0) });
+    }
+    const M = new T.Matrix4(), Q = new T.Quaternion(), S = v3();
+    function stepPool(sys, dt) {
+      sys.list = sys.list.filter(q => (q.age += dt) < q.life);
+      sys.list.forEach((q, i) => {
+        if (q.grav) q.v.addScaledVector(q.p.clone().normalize(), -q.grav * dt);
+        q.v.multiplyScalar(Math.max(0, 1 - q.drag * dt));
+        q.p.addScaledVector(q.v, dt);
+        if (q.grav && q.p.length() < R + 0.25) { q.p.setLength(R + 0.25); q.v.multiplyScalar(0.2); }
+        const a = q.age / q.life;
+        Q.setFromEuler(q.rot); S.setScalar(Math.max(0.01, q.s0 + (q.s1 - q.s0) * a));
+        sys.m.setMatrixAt(i, M.compose(q.p, Q, S));
+        sys.m.setColorAt(i, q.fade && a > 0.45 ? q.fade : q.c);
+      });
+      sys.m.count = sys.list.length; sys.m.instanceMatrix.needsUpdate = true; sys.m.instanceColor.needsUpdate = true;
+    }
+
+    // HUD chips over the canvas, written only when they change
+    const hud = {}, set = (id, key, val) => { const el = $(id), k = id + key; if (hud[k] !== val) { hud[k] = val; key === "hidden" ? el.hidden = val : key === "text" ? el.textContent = val : key === "html" ? el.innerHTML = val : el.style[key] = val; } };
+    const screen = w => { const p = w.clone().project(cam); return [(p.x + 1) / 2 * W, (1 - p.y) / 2 * H]; };
+    return { T, renderer, scene, cam, W, H, paint, toon, inked, v3, rndDir, earth, cloud, stars, pool, emit, stepPool, set, screen };
+  }
+
+  // Drag sideways to turn a scene
+  function dragToTurn(canvas, turn) {
+    let x0 = null;
+    canvas.addEventListener("pointerdown", e => { x0 = e.clientX; canvas.setPointerCapture(e.pointerId); });
+    canvas.addEventListener("pointermove", e => { if (x0 !== null) { turn((e.clientX - x0) * 0.008); x0 = e.clientX; } });
+    ["pointerup", "pointercancel"].forEach(t => canvas.addEventListener(t, () => x0 = null));
+  }
+
+  // ---------- Re-entry sandbox ----------
+  // One dial, one loop: the entry angle decides skip, burn-up or splashdown. Angles are drawn 6× steeper than real.
+  const entry = $("entry"), RE = slides.findIndex(s => s.querySelector("#re3d"));
+  const fmtDeg = a => `${a.toFixed(1).replace("-", "−")}°`;
+  const reOutcome = a => a > -5.5 ? "skip" : a < -7.5 ? "burn" : "safe";
+  const reG = a => a > -5.5 ? 0.9 : a < -7.5 ? 4 + (-a - 7.5) * 4 : 2.5 + (-a - 5.5) * 0.75; // peak braking load, g
+  let reYaw = 0;
+
+  function paintFeedback(color) {
+    const box = $("re-feedback"), ink = inkFor(color);
+    box.style.color = box.style.borderColor = box.style.outlineColor = ink;
+    repaint(box, color);
+  }
+  // The rules' verdict, revealed when the flight ends
+  function reTell(a) {
+    const [response, feedback, color] = {
+      skip: ["Too shallow: the atmosphere can't grab the capsule.", "Skipped back out to space. Mission lost.", "var(--red)"],
+      burn: [`Too steep: braking load climbs to ${reG(a).toFixed(1)} g and the heat shield overloads.`, "Burned up on entry. Mission lost.", "var(--red)"],
+      safe: ["Inside the corridor: drag slows the capsule gradually.", "Safe splashdown. Crew home.", "var(--green)"],
+    }[reOutcome(a)];
+    $("re-response").textContent = response;
+    $("re-feedback-text").textContent = feedback;
+    paintFeedback(color);
+  }
+
+  // 3D: a toon Earth seen side-on, the atmosphere shell, the safe corridor; the camera rides along with the capsule
+  function buildReentry3D() {
+    const R = 200, ATM = 14, SEA = 0.6, KM = 120 / (ATM - SEA), TH0 = -0.17, EXAG = 6, APPROACH = 26, A = 1, SPLASH = TH0 + 0.19;
+    const kit = toonKit($("re3d"), 14, 4000, R);
+    if (!kit) return null;
+    const { T, renderer, scene, cam, paint, toon, inked, v3, rndDir, earth, cloud, stars, pool, emit, stepPool, set, screen } = kit, Y = v3(0, 1, 0), Z = v3(0, 0, 1);
+    const polar = (th, r) => v3(Math.sin(th) * r, Math.cos(th) * r, 0);
+    const EP = polar(TH0, R + ATM), TANG = v3(Math.cos(TH0), -Math.sin(TH0), 0), RAD = EP.clone().normalize();
+    const aim = deg => { const g = deg * EXAG * Math.PI / 180; return TANG.clone().multiplyScalar(Math.cos(g)).addScaledVector(RAD, Math.sin(g)); };
+    // distance along d from the entry point down to radius r
+    const reach = (d, r) => { const b = EP.dot(d), disc = b * b - (EP.lengthSq() - r * r); return disc > 0 ? -b - Math.sqrt(disc) : 30; };
+    const bez = (P, s) => { const m = 1 - s; return P[0].clone().multiplyScalar(m * m * m).addScaledVector(P[1], 3 * m * m * s).addScaledVector(P[2], 3 * m * s * s).addScaledVector(P[3], s * s * s); };
+    const rodGeo = new T.CylinderGeometry(1, 1, 1, 8);
+    function rod(a, b, r, mat) {
+      const m = new T.Mesh(rodGeo, mat), d = b.clone().sub(a);
+      m.position.copy(a).addScaledVector(d, 0.5); m.scale.set(r, d.length(), r); m.quaternion.setFromUnitVectors(Y, d.normalize());
+      return m;
+    }
+
+    // World: sea under the splashdown, a blue atmosphere shell with its edge in yellow, clouds low over the sea
+    const splashAt = polar(SPLASH, R);
+    scene.add(earth((x, y, z, n) => n > .5 && splashAt.distanceTo(v3(x, y, z)) > 40));
+    const airMat = new T.MeshBasicMaterial({ color: PAINT.blue, side: T.BackSide, transparent: true, opacity: 0.5, depthWrite: false });
+    scene.add(new T.Mesh(new T.SphereGeometry(R + ATM, 128, 64), airMat));
+    const yellow = new T.MeshBasicMaterial({ color: PAINT.yellow });
+    scene.add(new T.Mesh(new T.TorusGeometry(R + ATM, 0.16, 6, 800), yellow));
+    const sky = stars(1500); scene.add(sky);
+    for (let i = 0; i < 9; i++) {
+      const c = cloud(), th = TH0 + 0.03 + i * 0.045;
+      c.position.copy(polar(th, R + 3.5 + (i * 5 % 4))).setZ(-10 - (i * 7 % 16)); c.scale.setScalar(0.6); c.quaternion.setFromUnitVectors(Y, polar(th, 1)); scene.add(c);
+    }
+    const flash = new T.PointLight(PAINT.yellow, 0, 60); scene.add(flash);
+
+    // Safe corridor: a green wedge just behind the flight plane, edged in enamel
+    const d1 = aim(-5.5), d2 = aim(-7.5);
+    const wedge = [EP, EP.clone().addScaledVector(d1, reach(d1, R)), EP.clone().addScaledVector(d2, reach(d2, R))].map(p => p.clone().setZ(-1.5));
+    scene.add(new T.Mesh(new T.BufferGeometry().setFromPoints(wedge), new T.MeshBasicMaterial({ color: PAINT.green, side: T.DoubleSide })));
+    const edgeMat = new T.MeshBasicMaterial({ color: PAINT.enamel });
+    [[0, 1], [1, 2], [2, 0]].forEach(([i, j]) => scene.add(rod(wedge[i], wedge[j], 0.14, edgeMat)));
+
+    // Aim: solid on the way in, dashed where the dial points it through the atmosphere
+    const aimG = new T.Group(); scene.add(aimG);
+    let idle;
+    function aimAt(deg) {
+      aimG.clear();
+      const d = aim(deg), S = EP.clone().addScaledVector(d, -APPROACH), L = reach(d, R);
+      aimG.add(rod(S, EP, 0.22, yellow));
+      for (let s = 0.6; s < L; s += 2.2) aimG.add(rod(EP.clone().addScaledVector(d, s), EP.clone().addScaledVector(d, Math.min(L, s + 1.2)), 0.16, yellow));
+      idle = { d, S };
+    }
+
+    // Capsule: red heat shield leading, enamel cone behind; a plasma dome glows ahead of the shield
+    const capsule = new T.Group(), bodyMat = toon("enamel");
+    const shield = inked(new T.CylinderGeometry(1, 1, 0.2, 28), toon("red"));
+    const cone = inked(new T.CylinderGeometry(0.4, 0.95, 1.3, 28), bodyMat); cone.position.y = 0.75;
+    const hatch = inked(new T.CylinderGeometry(0.3, 0.3, 0.25, 20), toon("black")); hatch.position.y = 1.52;
+    const port = new T.Mesh(new T.BoxGeometry(0.3, 0.25, 0.1), toon("black")); port.position.set(0, 0.75, 0.7); port.rotation.x = -0.4;
+    const domeGeo = new T.SphereGeometry(1, 24, 10, 0, Math.PI * 2, Math.PI / 2, Math.PI / 2);
+    const glow = new T.Mesh(domeGeo, new T.MeshBasicMaterial({ color: PAINT.yellow, side: T.DoubleSide }));
+    const rim = new T.Mesh(domeGeo, new T.MeshBasicMaterial({ color: PAINT.red, side: T.BackSide })); rim.scale.setScalar(1.2); glow.add(rim);
+    // Parachute: striped canopy on six lines, grown out of the hatch
+    const chute = new T.Group(), canopyGeo = new T.SphereGeometry(3.4, 12, 5, 0, Math.PI * 2, 0, Math.PI / 2).toNonIndexed(), cp = canopyGeo.attributes.position, gores = [];
+    for (let i = 0; i < cp.count; i += 3) {
+      const a = Math.atan2(cp.getZ(i) + cp.getZ(i + 1) + cp.getZ(i + 2), cp.getX(i) + cp.getX(i + 1) + cp.getX(i + 2));
+      const c = paint(Math.floor((a + Math.PI) / (Math.PI * 2) * 12) % 2 ? "red" : "enamel");
+      for (let k = 0; k < 3; k++) gores.push(c.r, c.g, c.b);
+    }
+    canopyGeo.setAttribute("color", new T.Float32BufferAttribute(gores, 3));
+    const canopy = inked(canopyGeo, toon(0xffffff, { vertexColors: true, flatShading: true, side: T.DoubleSide }), 1.04); canopy.position.y = 5.4;
+    const lineMat = new T.MeshBasicMaterial({ color: PAINT.black });
+    chute.add(canopy);
+    for (let k = 0; k < 6; k++) { const a = k / 6 * Math.PI * 2; chute.add(rod(v3(Math.cos(a) * 3.3, 5.4, Math.sin(a) * 3.3), v3(), 0.035, lineMat)); }
+    chute.position.y = 1.6;
+    capsule.add(shield, cone, hatch, port, glow, chute); capsule.scale.setScalar(1.2); scene.add(capsule);
+
+    const fire = pool(new T.MeshBasicMaterial({ color: 0xffffff }), 700, 2.2), smoke = pool(toon(0xffffff, { flatShading: true }), 300, 1.3);
+    const beads = pool(new T.MeshBasicMaterial({ color: 0xffffff }), 300, 0);
+    const ring = new T.Mesh(new T.RingGeometry(0.85, 1, 48), new T.MeshBasicMaterial({ color: PAINT.yellow, side: T.DoubleSide, transparent: true }));
+    ring.visible = false; scene.add(ring);
+    const showRing = (p, normal, color) => { ring.position.copy(p); ring.quaternion.setFromUnitVectors(Z, normal); ring.material.color.set(color); ring.userData.t = 0; ring.visible = true; };
+    let F = null, ff = false, shake = 0, last = 0, camReady = false;
+
+    function explode(p) {
+      const v = F.vel.clone().multiplyScalar(0.4);
+      if (!ff) { sfx.engineOff(0.1); sfx.boom(); shake = 1.4; flash.position.copy(p); flash.intensity = 6; showRing(p, cam.position.clone().sub(p).normalize(), PAINT.yellow); }
+      for (let i = 0; i < 110; i++) emit(fire, { p: p.clone(), v: rndDir().multiplyScalar(4 + Math.random() * 9).add(v), life: 0.6 + Math.random() * 0.8, s0: 0.8 + Math.random(), s1: 0.15, c: "yellow", fade: "red" });
+      for (let i = 0; i < 26; i++) emit(smoke, { p: p.clone(), v: rndDir().multiplyScalar(3).add(v), life: 3 + Math.random() * 1.5, s0: 0.8, s1: 2.6, c: "black" });
+      for (let i = 0; i < 24; i++) emit(smoke, { p: p.clone(), v: rndDir().multiplyScalar(6 + Math.random() * 8).add(v), life: 5, s0: 0.3, s1: 0.25, c: ["red", "enamel", "black"][i % 3], grav: 5, drag: 0.4 });
+    }
+    function splash(p) {
+      const up = p.clone().normalize();
+      if (!ff) { sfx.splash(); showRing(p.clone().addScaledVector(up, 0.1), up, PAINT.enamel); }
+      for (let i = 0; i < 40; i++) emit(smoke, { p: p.clone(), v: rndDir().multiplyScalar(2.5).addScaledVector(up, 4 + Math.random() * 5), life: 1.6, s0: 0.35, s1: 0.2, c: i % 3 ? "enamel" : "blue", grav: 14, drag: 0.2 });
+    }
+    function finish() {
+      F.done = true; F.doneAt = F.t;
+      if (!ff) F.o === "safe" ? sfx.win() : F.o === "skip" ? sfx.sad() : 0;
+      reTell(F.a);
+    }
+
+    // One simulation step of the flight (dt seconds)
+    function step(dt) {
+      const t = (F.t += dt), { o, d, S } = F, before = F.pos.clone(), up = F.pos.clone().normalize();
+      let pos = before.clone(), turnUp = false;
+      if (t < A) pos = S.clone().lerp(EP, t / A);
+      else if (o === "burn") {
+        const k = Math.min(1, (t - A) / 1.8);
+        if (!F.broken) pos = EP.clone().addScaledVector(d, F.L * (1 - (1 - k) ** 2));
+        Object.assign(F, { heat: 1.05 * k ** 1.2, g: F.peakG * k, speed: 11000 * (1 - 0.3 * k) });
+        if (k >= 1 && !F.broken) { F.broken = t; explode(pos); }
+        if (F.broken && t - F.broken > 1.2 && !F.done) finish();
+      } else if (o === "skip") {
+        const u = t - A, k = Math.min(1, u / 2.6), b = Math.sin(Math.PI * k);
+        pos = k < 1 ? bez(F.P, k) : before.clone().addScaledVector(F.vel, dt); // coasting away, tumbling
+        if (k >= 1) F.apex.applyAxisAngle(Z, -2.2 * dt);
+        Object.assign(F, { heat: 0.3 * b, g: 0.9 * b, speed: 11000 - 700 * k });
+        if (u > 4.2 && !F.done) finish();
+      } else {
+        const u = t - A, k = Math.min(1, u / 3.2), e = 1 - (1 - k) ** 2;
+        if (k < 1) {
+          const b = Math.sin(Math.PI * k ** 0.8);
+          pos = bez(F.P, e);
+          Object.assign(F, { heat: 0.8 * b, g: F.peakG * b, speed: 11000 * (1 - e) ** 1.3 + 150 * e });
+        } else {
+          const c = u - 3.2, fall = Math.min(1, c / 4.2);
+          if (F.chuteAt == null) { F.chuteAt = t; if (!ff) sfx.separate(); }
+          pos = polar(TH0 + 0.16 + 0.03 * fall, R + 3.2 - 2.6 * fall);
+          Object.assign(F, { heat: 0, g: 1, chute: Math.min(1, c / 0.7), speed: Math.round(c < 1 ? 150 - 141 * c : 9) });
+          turnUp = true;
+          if (fall >= 1 && !F.splashed) { F.splashed = t; splash(pos); }
+          if (F.splashed) { F.speed = 0; if (!ff) pos.setLength(R + SEA + 0.08 * Math.sin(t * 3)); if (t - F.splashed > 0.9 && !F.done) finish(); }
+        }
+      }
+      if (dt > 0 && !F.broken && !(o === "skip" && t - A >= 2.6)) F.vel = pos.clone().sub(before).divideScalar(dt);
+      F.pos = pos; F.alt = Math.max(0, (pos.length() - R - SEA) * KM);
+      // heat shield leads the way; under the parachute the capsule swings round to hang hatch-up
+      if (turnUp) F.apex.lerp(up, ff ? 1 : 1 - Math.exp(-dt * 4)).normalize();
+      else if (!(o === "skip" && t - A >= 2.6) && F.vel.lengthSq() > 1e-4) F.apex = F.vel.clone().normalize().negate();
+
+      // Plasma: roar, sparks streaming back from the shield, a trail of beads behind
+      const hot = F.heat > 0.06 && !F.broken;
+      if (hot && !F.roar) { F.roar = true; if (!ff) sfx.engineOn(0.5); }
+      if (F.roar) { if (!ff) sfx.engineLevel(0.3 + F.heat * 0.7); if (!hot) { F.roar = false; if (!ff) sfx.engineOff(0.6); } }
+      if (hot && !ff && dt > 0) {
+        const fwd = F.apex.clone().negate();
+        shake = Math.max(shake, F.heat * 0.35);
+        for (F.acc = (F.acc || 0) + 260 * F.heat * dt; F.acc >= 1; F.acc--)
+          emit(fire, { p: pos.clone().addScaledVector(fwd, 0.4).add(rndDir().multiplyScalar(0.6)), v: F.vel.clone().multiplyScalar(0.15).addScaledVector(fwd, -6 - Math.random() * 4).add(rndDir().multiplyScalar(2)), life: 0.35 + Math.random() * 0.35, s0: 0.5 + F.heat * 0.8, s1: 0.1, c: "yellow", fade: "red" });
+      }
+      if (!F.broken && !F.splashed && t - A < 4.2 && pos.distanceTo(F.bead) > 0.8) {
+        F.bead = pos.clone();
+        emit(beads, { p: pos.clone(), v: v3(), life: 1e9, s0: 0.22, s1: 0.22, c: pos.length() < R + ATM ? "red" : "yellow" });
+      }
+    }
+
+    function reset() {
+      sfx.engineOff(0.15); F = null; shake = 0; flash.intensity = 0; ring.visible = false;
+      fire.list.length = smoke.list.length = beads.list.length = 0;
+      aimAt(+entry.value); aimG.visible = true;
+    }
+    function start(a) {
+      reset(); aimG.visible = false;
+      const o = reOutcome(a), d = aim(a);
+      F = { a, o, d, S: idle.S, t: 0, pos: idle.S.clone(), vel: d.clone().multiplyScalar(APPROACH / A), apex: d.clone().negate(), bead: idle.S.clone(), heat: 0, g: 0, speed: 11000, peakG: reG(a), chute: 0 };
+      if (o === "burn") F.L = reach(d, R + ATM * 0.4);
+      if (o === "skip") F.P = [EP, EP.clone().addScaledVector(d, 9), polar(TH0 + 0.15, R + ATM - 3), polar(TH0 + 0.32, R + ATM + 16)];
+      if (o === "safe") F.P = [EP, EP.clone().addScaledVector(d, 10), polar(TH0 + 0.13, R + 4.5), polar(TH0 + 0.16, R + 3.2)];
+      if (still()) { ff = true; for (let i = 0; i < 600 && !F.done; i++) step(1 / 30); ff = false; }
+    }
+
+    const IDLE = polar(TH0 + 0.09, R + 12), space = paint("black"), blue = paint("blue"), bg = new T.Color(), enamel = paint("enamel"), hotRed = paint("red");
+    scene.background = bg;
+    function draw(now) {
+      const calm = still(), dt = Math.min(0.1, (now - (last || now)) / 1000);
+      last = now;
+      if (F && !(calm && F.done)) step(calm ? 0 : dt);
+      const live = calm ? 0 : dt;
+      stepPool(fire, live); stepPool(smoke, live); stepPool(beads, live);
+      flash.intensity *= Math.exp(-live * 5);
+      if (ring.visible) { const k = (ring.userData.t += live) / 0.7; ring.scale.setScalar(1 + k * 14); ring.material.opacity = Math.max(0, 1 - k); ring.visible = k < 1; }
+
+      // Capsule
+      const pos = F ? F.pos : idle.S, heat = F?.heat || 0;
+      capsule.visible = !F?.broken;
+      capsule.position.copy(pos); capsule.quaternion.setFromUnitVectors(Y, F ? F.apex : idle.d.clone().negate());
+      if (F?.chute && !F.splashed && !calm) capsule.rotateZ(Math.sin(now / 500) * 0.08);
+      glow.visible = heat > 0.06;
+      const flick = calm ? 1 : 0.9 + Math.random() * 0.2;
+      glow.scale.set(1.2 + heat * 0.3, (0.25 + heat * 1.3) * flick, 1.2 + heat * 0.3);
+      bodyMat.color.copy(enamel).lerp(hotRed, Math.min(1, Math.max(0, (heat - 0.7) / 0.35)));
+      chute.visible = !!F?.chute && !(F.splashed && F.t - F.splashed > 0.3);
+      chute.scale.setScalar(Math.max(0.05, F?.chute || 0));
+
+      // Camera: wide side-on view while aiming, then ride along; telephoto keeps the flight plane on the horizon
+      const focus = !F ? IDLE : pos.clone();
+      const up = focus.clone().normalize(), east = v3(up.y, -up.x, 0).normalize();
+      const after = F ? F.t - A : 0;
+      const dist = !F ? 185 : F.o === "skip" && after > 2.4 ? 160 : F.broken ? 80 : F.chute ? (F.splashed ? 46 : 40) : 95;
+      const pitch = 0.1, yaw = 0.3 + reYaw;
+      const want = focus.clone().add(Z.clone().multiplyScalar(Math.cos(yaw)).addScaledVector(east, Math.sin(yaw)).multiplyScalar(Math.cos(pitch) * dist)).addScaledVector(up, Math.sin(pitch) * dist);
+      const ease = camReady && !calm ? 1 - Math.exp(-dt * 2.5) : 1;
+      cam.position.lerp(want, ease); cam.up.lerp(up, ease).normalize();
+      cam.userData.look = (cam.userData.look || focus.clone()).lerp(focus, camReady && !calm ? 1 - Math.exp(-dt * 6) : 1);
+      camReady = true;
+      cam.lookAt(cam.userData.look);
+      shake *= Math.exp(-live * 3);
+      if (shake > 0.01) cam.position.add(rndDir().multiplyScalar(shake * 1.2));
+      // Sky turns blue once the camera is low in the atmosphere
+      const low = Math.min(1, Math.max(0, (ATM * 0.5 - (focus.length() - R)) / (ATM * 0.35)));
+      bg.copy(space).lerp(blue, low); sky.material.opacity = 1 - low;
+      renderer.render(scene, cam);
+
+      // HUD
+      set("re-l-air", "hidden", !!F); set("re-l-safe", "hidden", !!F);
+      if (!F) {
+        const [ax, ay] = screen(polar(TH0 + 0.22, R + ATM)), [sx, sy] = screen(wedge[2]);
+        set("re-l-air", "left", `${Math.round(ax)}px`); set("re-l-air", "top", `${Math.round(ay - 30)}px`);
+        set("re-l-safe", "left", `${Math.round(sx + 24)}px`); set("re-l-safe", "top", `${Math.round(sy - 30)}px`);
+      }
+      set("re-bars", "hidden", !F);
+      if (F) {
+        const h = Math.min(1.2, heat);
+        set("re-heat-v", "text", `${Math.round(heat * 100)}%`); set("re-heat-bar", "height", `${Math.round(h * 160)}px`);
+        set("re-heat-bar", "background", heat < 0.5 ? PAINT.green : heat < 0.9 ? PAINT.yellow : PAINT.red);
+        set("re-g-v", "text", `${F.g.toFixed(1)} g`); set("re-g-bar", "height", `${Math.round(Math.min(14, F.g) / 14 * 160)}px`);
+      }
+      const tele = F && !F.done && !F.broken;
+      set("re-tele", "hidden", !tele);
+      if (tele) set("re-tele", "text", `Altitude ${Math.round(F.alt)} km · ${Math.round(F.speed).toLocaleString("en")} m/s`);
+      set("re-black", "hidden", !(tele && heat > 0.12));
+      const word = !F?.done || (!calm && F.t - F.doneAt > 2.4) ? "" : { safe: "Splashdown!", skip: "Skipped out!", burn: "Burned up!" }[F.o];
+      set("re-word", "hidden", !word); set("re-word", "text", word);
+      const won = F?.done && F.o === "safe";
+      set("re-goal", "text", won ? "Crew home!" : "Goal: splash down");
+      $("re-goal").classList.toggle("won", !!won);
+      set("re-sound", "hidden", !sfx.muted);
+    }
+    aimAt(+entry.value);
+    return { draw, reset, start };
+  }
+
+  const re3 = buildReentry3D();
+  const reDraw = now => re3?.draw(now);
+  entry.oninput = () => { $("entry-out").textContent = fmtDeg(+entry.value); re3?.reset(); };
+  entry.oninput();
+  $("entry-go").onclick = () => {
+    const a = +entry.value;
+    $("re-action").textContent = `You commit to a ${fmtDeg(a)} entry.`;
+    $("re-response").textContent = "The rules are running…";
+    $("re-feedback-text").textContent = "Watch the capsule.";
+    paintFeedback("var(--enamel)");
+    if (re3) re3.start(a); else reTell(a);
+  };
+  dragToTurn($("re3d"), d => reYaw = Math.max(-1.2, Math.min(1.2, reYaw + d)));
+
+  // ---------- Too heavy to fly ----------
+  // Teaching numbers, balanced with scratchpad heavy_sim.py: max fuel with the biggest engine never leaves
+  // the pad; a 1 t satellite reaches orbit in ~35% of fuel/engine settings, 2 t in ~18%, 3 t in ~4%.
+  const ORBIT_DV = 4500, VE = 3000, TANK = 0.08, ENGINE_KG_PER_KN = 1, GRAVITY_LOSS = 0.6;
+  function launchResult(sat, fuel, push) {
+    const mass = sat + fuel * (1 + TANK) + push * ENGINE_KG_PER_KN, weight = Math.round(mass * 9.81 / 1000); // kN
+    const stars = sat >= 3000 ? 3 : sat >= 2000 ? 2 : 1;
+    if (push < weight) return { outcome: "pad", weight, twr: push / weight, dv: 0, stars };
+    const burnSeconds = fuel * VE / (push * 1000); // a slow climb burns fuel just holding the rocket up
+    const dv = Math.round(VE * Math.log(mass / (mass - fuel)) - 9.81 * burnSeconds * GRAVITY_LOSS);
+    return { outcome: dv >= ORBIT_DV ? "orbit" : "short", weight, twr: push / weight, dv, stars };
+  }
+  const RK = slides.findIndex(sl => sl.querySelector("#rk3d"));
+  const rk = { sat: 2000, fuel: 20000, push: 300 }, rkShown = { ...rk };
+  let rkYaw = 0, rkFlight = null;
+  const kg = n => `${n.toLocaleString("en")} kg`;
+
+  // The room's verdict, revealed only when the flight ends
+  function rkTell() {
+    const f = rkFlight;
+    if (!f || f.told) return;
+    f.told = true;
+    const [head, msg, paint] = f.outcome === "pad" ? ["Too heavy!", `Weight ${f.weight} kN beat push ${rk.push} kN.`, "var(--red)"]
+      : f.outcome === "short" ? ["Fell back", `${Math.round(100 * Math.max(0, f.dv) / ORBIT_DV)}% of orbit speed. ${f.twr < 1.4 ? "Slow climb: gravity ate the fuel." : "Ran out of fuel."}`, "var(--red)"]
+      : ["Orbit!", `${kg(rk.sat)} in orbit: ${f.stars} of 3 stars.${f.stars < 3 ? " Go heavier?" : ""}`, "var(--green)"];
+    $("dv").textContent = head;
+    $("dv-msg").textContent = msg;
+    repaint($("dv-board"), paint);
+  }
+
+  // 3D launch: a toon-painted Earth, pad and rocket; the camera rides along to orbit or to the crash
+  function buildRocket3D() {
+    const R = 200, ORBIT_H = 30, PAD = R + 0.85, COUNT = 2.4, HOLD = 0.6, OMEGA = 0.11, FALL_G = 9;
+    const kit = toonKit($("rk3d"), 45, 6000, R);
+    if (!kit) return null;
+    const { T, renderer, scene, cam, W, H, paint, toon, inked, v3, rndDir, earth, cloud, stars, pool, emit, stepPool, set, screen } = kit, Y = v3(0, 1, 0), Z = v3(0, 0, 1);
+
+    // World: low-poly Earth with the launch site on top and the orbit ring 30 units up
+    const flash = new T.PointLight(PAINT.yellow, 0, 90); scene.add(flash);
+    scene.add(earth((x, y, z, n) => y > R * .55 || n > .5)); // crash sites land on land
+
+    const ground = new T.Mesh(new T.CylinderGeometry(16, 16, 1, 48), toon("green")); ground.position.y = R - 0.45;
+    const pad = inked(new T.CylinderGeometry(2.4, 2.6, 0.8, 32), toon("black")); pad.position.y = R + 0.45;
+    const tower = inked(new T.BoxGeometry(0.7, 14, 0.7), toon("red")); tower.position.set(-3.2, R + 7, 0);
+    scene.add(ground, pad, tower);
+    for (let y = 1; y < 14; y += 1.6) { const bar = new T.Mesh(new T.BoxGeometry(0.82, 0.2, 0.82), toon("black")); bar.position.set(-3.2, R + y, 0); scene.add(bar); }
+    const armPivot = new T.Group(), arm = inked(new T.BoxGeometry(2.1, 0.35, 0.5), toon("black"));
+    arm.position.x = 1.05; armPivot.add(arm); armPivot.position.set(-3.2, R + 6, 0); scene.add(armPivot);
+    const treeGeo = new T.ConeGeometry(0.7, 2, 7), treeMat = toon("green");
+    for (let i = 0; i < 22; i++) {
+      const a = i * 2.39996, r = 11 + (i * 37 % 9) / 2, t = inked(treeGeo, treeMat);
+      t.position.set(Math.cos(a) * r, R + 1.05, Math.sin(a) * r); scene.add(t);
+    }
+    for (const [x, z, w] of [[11, -9, 3], [-11, -8, 2.4], [12, 6, 2]]) {
+      const hall = inked(new T.BoxGeometry(w, w * 0.8, w), toon("enamel")); hall.position.set(x, R + w * 0.4, z); scene.add(hall);
+    }
+    for (let i = 0; i < 16; i++) {
+      const g = cloud(), a = i * 2.4, r = 32 + (i * 7 % 15); // a ring well outside the camera's idle orbit
+      g.position.set(Math.cos(a) * r, R + 6 + (i * 7 % 9), Math.sin(a) * r); scene.add(g);
+    }
+    const sky = stars(2500), starMat = sky.material; scene.add(sky);
+    const ringMat = new T.MeshBasicMaterial({ color: PAINT.yellow });
+    scene.add(new T.Mesh(new T.TorusGeometry(PAD + ORBIT_H, 0.3, 6, 400), ringMat));
+
+    // Rocket: engine bell, fuel tank with fins, then the satellite and nose that separate in orbit
+    const cyl = new T.CylinderGeometry(1, 1, 1, 28), box = new T.BoxGeometry(1, 1, 1);
+    const lower = new T.Group(), upper = new T.Group(); scene.add(lower, upper);
+    const bell = inked(new T.CylinderGeometry(0.55, 1, 1, 28), toon("black"));
+    const tank = inked(cyl, toon("red")), bands = [inked(cyl, toon("enamel")), inked(cyl, toon("enamel"))];
+    const fins = [0, 1, 2, 3].map(i => { const p = new T.Group(); p.rotation.y = i * Math.PI / 2 + Math.PI / 4; p.add(inked(box, toon("black"))); return p; });
+    lower.add(bell, tank, ...bands, ...fins);
+    const satBody = inked(cyl, toon("enamel")), satBand = inked(cyl, toon("yellow")), nose = inked(new T.ConeGeometry(1, 1, 28), toon("red"));
+    const panels = [inked(box, toon("blue")), inked(box, toon("blue"))];
+    upper.add(satBody, satBand, nose, ...panels);
+    function layout(s, open) {
+      const r = 0.6, nz = 0.5 + s.push / 600 * 0.7, br = 0.35 + s.push / 600 * 0.35, tk = 1.6 + s.fuel / 60000 * 6.5, st = 0.6 + s.sat / 5000 * 1.6, ns = 1.2;
+      bell.scale.set(br, nz, br); bell.position.y = nz / 2;
+      tank.scale.set(r, tk, r); tank.position.y = nz + tk / 2;
+      bands.forEach((b, i) => { b.scale.set(r * 1.02, 0.22, r * 1.02); b.position.y = nz + tk * (i ? 0.78 : 0.3); });
+      fins.forEach(p => { p.position.y = nz + 0.7; p.children[0].scale.set(0.8, 1.4, 0.12); p.children[0].position.x = r + 0.35; });
+      satBody.scale.set(r * 0.9, st, r * 0.9); satBody.position.y = st / 2;
+      satBand.scale.set(r * 0.93, 0.18, r * 0.93); satBand.position.y = st * 0.5;
+      nose.scale.set(r * 0.9, ns, r * 0.9); nose.position.y = st + ns / 2;
+      panels.forEach((p, i) => {
+        p.visible = open > 0.02; p.scale.set(2.4 * open, st * 0.7, 0.08);
+        p.position.set((i ? -1 : 1) * (r * 0.9 + 1.2 * open), st / 2, 0);
+      });
+      armPivot.position.y = R + Math.min(9, 0.85 + (nz + tk) * 0.75);
+      return { nz, br, tk, st, len: nz + tk + st + ns };
+    }
+    const place = (g, pos, dir) => { g.position.copy(pos); g.quaternion.setFromUnitVectors(Y, dir); };
+
+    // Gravity-turn ascent in the launch plane: straight up at first, level with the ring at the end
+    const TURN = 0.32;
+    function path(k) {
+      const th = TURN * k * k, h = ORBIT_H * (1 - (1 - k) ** 2), r = PAD + h, dth = 2 * TURN * k, dh = 2 * ORBIT_H * (1 - k);
+      return [v3(Math.sin(th) * r, Math.cos(th) * r, 0),
+        v3(Math.cos(th) * dth * r + Math.sin(th) * dh, -Math.sin(th) * dth * r + Math.cos(th) * dh, 0).normalize()];
+    }
+
+    const fire = pool(new T.MeshBasicMaterial({ color: 0xffffff }), 600, 2.5), smoke = pool(toon(0xffffff, { flatShading: true }), 600, 1.3);
+    let F = null, ff = false, shake = 0, shock = -1, dims = layout(rkShown, 0), last = 0, camReady = false;
+    const shockMesh = new T.Mesh(new T.RingGeometry(0.85, 1, 48), new T.MeshBasicMaterial({ color: PAINT.yellow, side: T.DoubleSide, transparent: true }));
+    shockMesh.visible = false; scene.add(shockMesh);
+    function exhaust(dt, p, d, alt) {
+      if (ff) return;
+      const back = d.clone().negate();
+      F.acc = (F.acc || 0) + (70 + rk.push / 600 * 120) * dt;
+      for (; F.acc >= 1; F.acc--) {
+        const jit = rndDir().multiplyScalar(2.5);
+        emit(fire, { p: p.clone().addScaledVector(back, 0.3), v: back.clone().multiplyScalar(14 + Math.random() * 8).add(jit), life: 0.22 + Math.random() * 0.2, s0: dims.br * 1.5, s1: 0.15, c: "yellow", fade: "red" });
+        if (alt > 22 || Math.random() > (alt < 2.5 ? 0.3 : 0.45)) continue;
+        if (alt < 2.5) { // the flame trench throws smoke sideways along the ground
+          const a = Math.random() * Math.PI * 2, out = v3(Math.cos(a), 0.12, Math.sin(a));
+          emit(smoke, { p: v3(out.x * 1.6, PAD - 0.3, out.z * 1.6), v: out.multiplyScalar(6 + Math.random() * 7), life: 1.6 + Math.random() * 1.2, s0: 0.7, s1: 2.4, c: "enamel" });
+        } else emit(smoke, { p: p.clone().addScaledVector(back, 1.2), v: jit.multiplyScalar(0.4), life: 3 + Math.random() * 2, s0: 0.8, s1: 3 - alt * 0.08, c: "enamel" });
+      }
+    }
+    function explode(p) {
+      if (ff) return;
+      const up = p.clone().normalize();
+      sfx.boom(); shake = 1.6; flash.position.copy(p).addScaledVector(up, 3); flash.intensity = 8;
+      for (let i = 0; i < 90; i++) emit(fire, { p: p.clone(), v: rndDir().multiplyScalar(5 + Math.random() * 12).addScaledVector(up, 5), life: 0.5 + Math.random() * 0.7, s0: 1.2 + Math.random(), s1: 0.2, c: "yellow", fade: "red" });
+      for (let i = 0; i < 30; i++) emit(smoke, { p: p.clone().addScaledVector(up, 1), v: rndDir().multiplyScalar(4).addScaledVector(up, 2 + Math.random() * 3), life: 2.5 + Math.random() * 1.5, s0: 1, s1: 2.8, c: "black" });
+      for (let i = 0; i < 28; i++) emit(smoke, { p: p.clone().addScaledVector(up, 0.5), v: rndDir().multiplyScalar(8 + Math.random() * 10).addScaledVector(up, 10), life: 4, s0: 0.35, s1: 0.3, c: ["red", "enamel", "blue", "black"][i % 4], grav: 22, drag: 0.3 });
+      shockMesh.position.copy(p).addScaledVector(up, 0.3); shockMesh.quaternion.setFromUnitVectors(Z, up); shock = 0; shockMesh.visible = true;
+    }
+
+    // One simulation step of the flight (dt seconds)
+    function step(dt) {
+      const f = F.f, t = (F.t += dt);
+      if (t < COUNT) {
+        const n = 3 - Math.floor(t / 0.8);
+        if (n !== F.count) { F.count = n; if (!ff) sfx.beep(false); }
+        return;
+      }
+      if (!F.lit) { F.lit = true; F.count = 0; if (!ff) { sfx.beep(true); sfx.engineOn(rk.push / 600); } }
+      if (f.outcome === "pad") {
+        F.pos = v3(0, PAD, 0); F.dir = Y; F.burning = t < COUNT + 3.4;
+        if (F.burning) { exhaust(dt, F.pos, Y, 0); shake = Math.max(shake, 0.25); }
+        else if (!F.done) { F.done = true; if (!ff) { sfx.engineOff(1.2); sfx.sad(); } rkTell(); }
+        return;
+      }
+      const D = Math.min(7, Math.max(4, 7 / f.twr)), reach = f.outcome === "orbit" ? 1 : Math.max(0.12, f.dv / ORBIT_DV) * 0.9;
+      const u = Math.max(0, (t - COUNT - HOLD) / D);
+      if (u < 1) {
+        const k = reach * u ** 1.5, [p, d] = path(k), alt = p.length() - PAD;
+        F.vel = F.pos ? p.clone().sub(F.pos).divideScalar(dt) : v3();
+        F.pos = p; F.dir = d; F.burning = true; F.alt = alt; F.speed = Math.round((f.outcome === "orbit" ? ORBIT_DV : Math.max(0, f.dv)) * k / reach);
+        if (u > 0 && !F.liftoff) F.liftoff = t;
+        exhaust(dt, p, d, alt); shake = Math.max(shake, 0.14 * Math.max(0, 1 - alt / 6));
+        if (!ff) sfx.engineLevel(1 - alt / ORBIT_H * 0.6);
+        return;
+      }
+      if (!F.burnout) {
+        F.burnout = t; F.burning = false;
+        if (!ff) sfx.engineOff(f.outcome === "orbit" ? 0.3 : 0.15);
+        if (f.outcome === "orbit") {
+          const sp = F.pos.clone().addScaledVector(F.dir, dims.nz + dims.tk);
+          F.satTh = Math.atan2(sp.x, sp.y); F.satR = sp.length(); F.low = { p: F.pos.clone(), v: F.vel.clone().multiplyScalar(0.9), d: F.dir.clone() };
+          if (!ff) sfx.separate();
+        } else { F.fallV = F.vel.clone(); F.spin = 0; F.d0 = F.dir.clone(); }
+      }
+      const tau = t - F.burnout;
+      if (f.outcome === "orbit") {
+        F.satTh += OMEGA * dt;
+        F.open = Math.min(1, Math.max(0, (tau - 0.5) / 1));
+        const L = F.low; L.v.addScaledVector(L.p.clone().normalize(), -FALL_G * dt); L.p.addScaledVector(L.v, dt); L.d.applyAxisAngle(Z, -1.2 * dt);
+        if (tau > 1.3 && !F.done) { F.done = true; ringMat.color.set(PAINT.green); if (!ff) sfx.win(); rkTell(); }
+        return;
+      }
+      if (!F.crashed) {
+        F.fallV.addScaledVector(F.pos.clone().normalize(), -FALL_G * dt); F.pos.addScaledVector(F.fallV, dt);
+        F.spin += 2.6 * dt; F.dir = F.d0.clone().applyAxisAngle(Z, -F.spin);
+        F.alt = F.pos.length() - PAD; F.speed = Math.round(F.fallV.length() * 100);
+        if (!F.whistled && F.fallV.dot(F.pos.clone().normalize()) < 0) { F.whistled = true; if (!ff) sfx.whistle(); }
+        if (F.pos.length() <= R + 0.4) { F.crashed = t; explode(F.pos); }
+      } else if (t - F.crashed > 1.1 && !F.done) { F.done = true; rkTell(); }
+    }
+
+    function reset() {
+      sfx.engineOff(0.15); F = null; fire.list.length = smoke.list.length = 0; shockMesh.visible = false; shock = -1; flash.intensity = 0; shake = 0;
+      ringMat.color.set(PAINT.yellow);
+    }
+    function start(f) {
+      reset(); F = { f, t: 0, count: 0 };
+      if (still()) { ff = true; for (let i = 0; i < 900 && !F.done; i++) step(1 / 30); ff = false; }
+    }
+
+    // HUD: painted chips over the scene, written only when they change
+    const star = on => `<svg viewBox="-1 -1 2 2"><polygon points="${Array.from({ length: 10 }, (_, k) => { const a = -Math.PI / 2 + k * Math.PI / 5, q = k % 2 ? .45 : .92; return `${(Math.cos(a) * q).toFixed(3)},${(Math.sin(a) * q).toFixed(3)}`; }).join(" ")}" fill="${on ? PAINT.yellow : PAINT.enamel}" stroke="${PAINT.black}" stroke-width=".1"/></svg>`;
+    const blueSky = paint("blue"), space = paint("black"), bg = new T.Color();
+    scene.background = bg;
+
+    function draw(now) {
+      const calm = still(), dt = Math.min(0.1, (now - (last || now)) / 1000);
+      last = now;
+      for (const k in rk) rkShown[k] += (rk[k] - rkShown[k]) * (calm ? 1 : 0.15);
+      dims = layout(rkShown, F?.open || 0);
+      if (F && !(calm && F.done)) step(calm ? 0 : dt);
+      const live = calm ? 0 : dt;
+      stepPool(fire, live); stepPool(smoke, live);
+      flash.intensity *= Math.exp(-live * 5);
+      if (shock >= 0) { shock += live; const k = shock / 0.7; shockMesh.scale.setScalar(2 + k * 30); shockMesh.material.opacity = Math.max(0, 1 - k); if (k >= 1) { shock = -1; shockMesh.visible = false; } }
+
+      // Rocket pieces
+      const pos = F?.pos ? F.pos.clone() : v3(0, PAD, 0), dir = F?.dir || Y;
+      if (F?.f.outcome === "pad" && F.burning && !calm) pos.x += Math.sin(now / 21) * 0.06;
+      const gone = !!F?.crashed, inOrbit = F?.satTh != null;
+      lower.visible = !gone && !(inOrbit && F.t - F.burnout > 5);
+      upper.visible = !gone;
+      if (inOrbit) {
+        place(lower, F.low.p, F.low.d);
+        const th = F.satTh, sp = v3(Math.sin(th) * F.satR, Math.cos(th) * F.satR, 0);
+        place(upper, sp, v3(Math.cos(th), -Math.sin(th), 0));
+      } else { place(lower, pos, dir); place(upper, pos.clone().addScaledVector(dir, dims.nz + dims.tk), dir); }
+      armPivot.rotation.y += ((F && F.t > COUNT - 0.6 ? 1.6 : 0) - armPivot.rotation.y) * (calm ? 1 : 0.08);
+
+      // Camera: idle orbit around the pad, then ride along; pull back to see the curve of the Earth in orbit
+      const focus = inOrbit ? upper.position.clone() : gone ? F.pos.clone() : pos.clone().addScaledVector(dir, dims.len / 2);
+      const alt = Math.max(0, focus.length() - PAD), up = focus.clone().normalize(), east = v3(up.y, -up.x, 0).normalize();
+      const flying = F && F.t > COUNT;
+      const dist = inOrbit ? Math.min(42, 22 + (F.t - F.burnout) * 10) : gone ? 42 : flying ? 14 + dims.len + alt * 0.9 : dims.len * 1.5 + 12;
+      const pitch = inOrbit ? 0.42 : gone ? 0.5 : 0.2, yaw = 0.6 + rkYaw + (F || calm ? 0 : now / 30000);
+      const want = focus.clone().add(Z.clone().multiplyScalar(Math.cos(yaw)).addScaledVector(east, Math.sin(yaw)).multiplyScalar(Math.cos(pitch) * dist)).addScaledVector(up, Math.sin(pitch) * dist);
+      const ease = camReady && !calm ? 1 - Math.exp(-dt * 3.5) : 1;
+      cam.position.lerp(want, ease); cam.up.lerp(up, ease).normalize(); camReady = true;
+      cam.userData.look = (cam.userData.look || focus.clone()).lerp(focus, camReady && !calm ? 1 - Math.exp(-dt * 8) : 1);
+      cam.lookAt(cam.userData.look);
+      shake *= Math.exp(-live * 3);
+      if (shake > 0.01) cam.position.add(rndDir().multiplyScalar(shake * 0.4));
+      const space01 = Math.min(1, Math.max(0, (alt - 10) / 16));
+      bg.copy(blueSky).lerp(space, space01); starMat.opacity = space01;
+      renderer.render(scene, cam);
+
+      // HUD
+      const ready = !F, f = F?.f;
+      set("rk-bars", "hidden", !ready);
+      ["rk-l-sat", "rk-l-tank", "rk-l-eng"].forEach(id => set(id, "hidden", !ready));
+      if (ready) {
+        const weight = launchResult(rk.sat, rk.fuel, rk.push).weight, px = 300 / 700;
+        set("rk-push-v", "text", `${rk.push} kN`); set("rk-push-bar", "height", `${rk.push * px}px`);
+        set("rk-weight-v", "text", `${weight} kN`); set("rk-weight-bar", "height", `${weight * px}px`);
+        for (const [id, d] of [["rk-l-sat", dims.nz + dims.tk + dims.st / 2], ["rk-l-tank", dims.nz + dims.tk / 2], ["rk-l-eng", dims.nz / 2]]) {
+          const [x, y] = screen(pos.clone().addScaledVector(dir, d));
+          set(id, "left", `${Math.round(x + 50)}px`); set(id, "top", `${Math.round(y)}px`);
+        }
+      }
+      const word = F?.liftoff && F.t - F.liftoff < 1 ? "Liftoff!" : f?.outcome === "pad" && F.t > COUNT + 1.5 && !F.done ? "Too heavy!" : "";
+      set("rk-count", "hidden", !(F?.count > 0 || word));
+      set("rk-count", "text", F?.count > 0 ? String(F.count) : word);
+      $("rk-count").className = "rk-count" + (word ? " word" : "");
+      const tele = flying && !F.done && f.outcome !== "pad" && F.alt != null;
+      set("rk-tele", "hidden", !tele);
+      if (tele) set("rk-tele", "text", `Altitude ${Math.max(0, Math.round(F.alt / ORBIT_H * 200))} km · ${F.speed.toLocaleString("en")} m/s`);
+      const won = F?.done && f.outcome === "orbit";
+      set("rk-stars", "hidden", !won);
+      if (won) set("rk-stars", "html", [0, 1, 2].map(i => star(i < f.stars)).join(""));
+      set("rk-goal", "text", won ? "Orbit reached!" : "Orbit · 200 km · 4,500 m/s");
+      $("rk-goal").classList.toggle("won", !!won);
+      set("rk-sound", "hidden", !sfx.muted);
+    }
+    return { draw, reset, start };
+  }
+
+  const rk3 = buildRocket3D();
+  const rkDraw = now => rk3?.draw(now);
+  function rocket() {
+    Object.assign(rk, { sat: +$("sat").value, fuel: +$("fuel").value, push: +$("push").value });
+    $("sat-out").textContent = kg(rk.sat);
+    $("fuel-out").textContent = kg(rk.fuel);
+    $("push-out").textContent = `${rk.push} kN`;
+    rkFlight = null; rk3?.reset();
+    $("dv").textContent = "Ready?";
+    $("dv-msg").textContent = "Set the sliders, press Launch.";
+    repaint($("dv-board"), "var(--blue)");
+  }
+  function launch() {
+    rkFlight = launchResult(rk.sat, rk.fuel, rk.push);
+    $("dv").textContent = "Ready?";
+    $("dv-msg").textContent = "Here we go…";
+    repaint($("dv-board"), "var(--blue)");
+    if (rk3) rk3.start(rkFlight); else rkTell();
+  }
+  ["sat", "fuel", "push"].forEach(id => $(id).oninput = rocket);
+  $("rk-go").onclick = launch;
+  addEventListener("keydown", e => {
+    if ((current !== RK && current !== RE) || e.repeat || e.target.matches?.("textarea, input:not([type=range])")) return;
+    if ((e.key === "l" || e.key === "L") && current === RK) launch();
+    if (e.key === "m" || e.key === "M") sfx.toggle();
+  });
+  rocket();
+  dragToTurn($("rk3d"), d => rkYaw += d);
+
+  function scenes(now) {
+    requestAnimationFrame(scenes); // first, so one bad frame can't stop every scene
+    if (current !== RE && current !== RK) sfx.engineOff(0.3); // no roar left running after a slide change
+    if (current === RE) reDraw(now);
+    if (current === RK) rkDraw(now);
+  }
+  requestAnimationFrame(scenes);
+
+  // ---------- Dust Storm Dispatch ----------
+  // Teaching numbers, balanced with scratchpad dust_sim.py: a room that cleans when dust passes 40%
+  // wins about 9 games in 10; a room that never cleans loses about 9 in 10.
+  const dcv = $("dust"), dx = dcv.getContext("2d");
+  const DW = dcv.width, DH = dcv.height, GROUND = DH - 190;
+  const ROCKS = [2, 4, 6], LAST = 6, STORM_SOL = 12, DRIVE = 24, SAMPLE = 20, SUN = 16;
+  const tileX = t => 140 + t * 176;
+  const streaks = Array.from({ length: 70 }, (_, i) => ({ x: (i * 197) % DW, y: (i * 89) % (GROUND - 40) + 20, v: 6 + (i % 5) * 3 }));
+  let ds, banner, stamp;
+
+  function dsReset() {
+    ds = { sol: 1, tile: 0, x: tileX(0), battery: 100, dust: 0, science: 0, sampled: [], over: false };
+    banner = stamp = null;
+    $("ds-msg").textContent = "Sol 1. Vote each sol: 1 drive, 2 sample a rock, 3 clean the panels.";
+    dsPanel();
+  }
+  const onFreshRock = () => ROCKS.includes(ds.tile) && !ds.sampled.includes(ds.tile);
+
+  function dsMove(move) {
+    if (ds.over || (move === "drive" && ds.tile >= LAST) || (move === "sample" && !onFreshRock())) return;
+    const log = [`Sol ${ds.sol}:`];
+    if (move === "drive") { ds.battery -= DRIVE; ds.tile++; log.push(`drove on, battery −${DRIVE}.`); }
+    else if (move === "sample") { ds.battery -= SAMPLE; ds.science++; ds.sampled.push(ds.tile); log.push(`drilled the rock, battery −${SAMPLE}.`); }
+    else { const was = ds.dust; ds.dust = Math.max(0, ds.dust - 40); log.push(`shook the panels clean, dust −${was - ds.dust}.`); }
+
+    // Surprise events: luck the players can see, inside fixed rules
+    const roll = Math.random();
+    if (roll < 0.2) {
+      const was = ds.dust; ds.dust = Math.max(0, ds.dust - 30);
+      if (was > ds.dust) { log.push(`Dust devil! Wind cleaned the panels, dust −${was - ds.dust}.`); flash("Dust devil!", "Free panel cleaning", PAINT.green); }
+    } else if (roll < 0.35 && move === "drive") {
+      ds.battery -= 10; log.push("Soft sand! Wheels slipped, battery −10."); flash("Soft sand!", "Wheels slipped: battery −10", PAINT.yellow);
+    }
+
+    if (ds.battery <= 0) {
+      ds.battery = 0; finish(false, "Rover silent", "Battery flat. Opportunity went quiet like this in 2018.");
+      log.push("Battery flat.");
+    } else if (ds.science === 3) {
+      const stars = ds.battery >= 40 ? 3 : ds.battery >= 20 ? 2 : 1;
+      finish(true, "Science sent home", `${ds.battery}% battery left`, stars);
+      log.push(`All 3 samples home with ${ds.battery}% battery.`);
+    } else {
+      const sun = Math.round(SUN * (1 - ds.dust / 100)), storm = 10 + ds.sol;
+      ds.battery = Math.min(100, ds.battery + sun);
+      ds.dust = Math.min(100, ds.dust + storm);
+      log.push(`Sun +${sun}. Storm dust +${storm}.`);
+      if (ds.sol === STORM_SOL) { finish(false, "Storm hit", `Only ${ds.science} of 3 samples made it home.`); log.push("The storm arrived."); }
+      else ds.sol++;
+    }
+    $("ds-msg").textContent = log.join(" ");
+    dsPanel(move !== "clean");
+  }
+
+  function finish(won, title, sub, stars = 0) {
+    ds.over = true;
+    stamp = { title, sub, stars, color: won ? PAINT.green : PAINT.red, t0: performance.now() };
+  }
+  function flash(title, sub, color) { banner = { title, sub, color, t0: performance.now() }; }
+
+  function paintBox(id, color) {
+    const box = $(id);
+    box.style.color = inkFor(color);
+    repaint(box, color);
+  }
+  function dsPanel(spent) {
+    $("ds-sol").textContent = `${ds.sol} / ${STORM_SOL}`;
+    $("ds-storm").textContent = ds.over ? "Sol · game over" : `Sol · storm in ${STORM_SOL - ds.sol + 1}`;
+    $("ds-bat").textContent = `${ds.battery}%`;
+    $("ds-dust").textContent = `${ds.dust}%`;
+    $("ds-sci").textContent = `${ds.science} / 3`;
+    paintBox("ds-bat-box", level(ds.battery));
+    paintBox("ds-dust-box", ds.dust < 40 ? "var(--green)" : ds.dust < 70 ? "var(--yellow)" : "var(--red)");
+    paintBox("ds-sci-box", ds.science === 3 ? "var(--green)" : "var(--enamel)");
+    const bat = $("ds-bat-box");
+    if (spent && ds.battery <= 25 && !still()) { bat.classList.remove("alarm"); void bat.offsetWidth; bat.classList.add("alarm"); }
+    document.querySelector('[data-ds="drive"]').disabled = ds.over || ds.tile >= LAST;
+    document.querySelector('[data-ds="sample"]').disabled = ds.over || !onFreshRock();
+    document.querySelector('[data-ds="clean"]').disabled = ds.over;
+  }
+
+  // Painted lettering: solid drop-shade, same as the slide signs
+  function letter(text, x, y, size, color, shade, align = "left") {
+    dx.font = `${size}px Lalezar, sans-serif`; dx.textAlign = align; dx.textBaseline = "alphabetic";
+    dx.fillStyle = shade; dx.fillText(text.toUpperCase(), x + size * .045, y + size * .045);
+    dx.fillStyle = color; dx.fillText(text.toUpperCase(), x, y);
+  }
+  function board(x, y, w, h, color) {
+    dx.fillStyle = color; dx.fillRect(x, y, w, h);
+    dx.strokeStyle = color === PAINT.yellow ? PAINT.black : PAINT.enamel; dx.lineWidth = 3; dx.strokeRect(x + 12, y + 12, w - 24, h - 24);
+  }
+  function star(cx, cy, r, filled) {
+    dx.beginPath();
+    for (let i = 0; i < 10; i++) {
+      const a = -Math.PI / 2 + i * Math.PI / 5, rr = i % 2 ? r * .45 : r;
+      dx.lineTo(cx + Math.cos(a) * rr, cy + Math.sin(a) * rr);
+    }
+    dx.closePath();
+    dx.fillStyle = filled ? PAINT.yellow : PAINT.red; dx.fill();
+    dx.lineWidth = 5; dx.strokeStyle = PAINT.black; dx.stroke();
+  }
+
+  function dsDraw(now) {
+    const calm = still();
+    dx.fillStyle = PAINT.enamel; dx.fillRect(0, 0, DW, DH);
+
+    // The storm wall chases the rover from the left, one step per sol
+    const front = 30 + (ds.sol - 1) / (STORM_SOL - 1) * (DW - 360);
+    dx.fillStyle = PAINT.black; dx.beginPath(); dx.moveTo(0, 0);
+    for (let y = 0; y <= GROUND; y += 36) dx.lineTo(front - (y / 36 % 2 ? 0 : 34) + (calm ? 0 : Math.sin(now / 260 + y) * 7), y);
+    dx.lineTo(0, GROUND); dx.closePath(); dx.fill();
+    if (front > 380) letter("Dust storm", 36, 100, 54, PAINT.enamel, PAINT.red);
+
+    // Mars ground with tile marks and the countdown painted on it
+    dx.fillStyle = PAINT.red; dx.fillRect(0, GROUND, DW, DH - GROUND);
+    dx.fillStyle = PAINT.black; dx.fillRect(0, GROUND, DW, 6);
+    for (let t = 0; t <= LAST; t++) dx.fillRect(tileX(t) - 3, GROUND + 6, 6, 22);
+    const left = STORM_SOL - ds.sol + 1;
+    letter(ds.over ? "Game over" : `Storm in ${left} sol${left === 1 ? "" : "s"}`, DW - 36, DH - 46, 64, PAINT.enamel, PAINT.black, "right");
+
+    // Rocks: yellow to sample, green once drilled
+    for (const t of ROCKS) {
+      const x = tileX(t) + 70, done = ds.sampled.includes(t);
+      dx.beginPath(); dx.moveTo(x - 38, GROUND); dx.lineTo(x - 26, GROUND - 34); dx.lineTo(x + 4, GROUND - 46); dx.lineTo(x + 34, GROUND - 22); dx.lineTo(x + 40, GROUND); dx.closePath();
+      dx.fillStyle = done ? PAINT.green : PAINT.yellow; dx.fill(); dx.lineWidth = 5; dx.strokeStyle = PAINT.black; dx.stroke();
+    }
+
+    // Rover glides to its tile
+    const target = tileX(ds.tile);
+    ds.x = calm ? target : ds.x + (target - ds.x) * .14;
+    const rx = ds.x, ry = GROUND - 30, bob = calm || Math.abs(target - rx) < 1 ? 0 : Math.sin(now / 40) * 2;
+    dx.save(); dx.translate(rx, ry + bob);
+    dx.lineWidth = 6; dx.strokeStyle = PAINT.black;
+    dx.beginPath(); dx.moveTo(0, -48); dx.lineTo(0, -92); dx.stroke();
+    dx.fillStyle = PAINT.enamel; dx.fillRect(-80, -108, 160, 22); dx.strokeRect(-80, -108, 160, 22);
+    dx.fillStyle = PAINT.black;
+    for (let i = 0; i < Math.round(ds.dust / 3); i++) dx.fillRect(-76 + (i * 53) % 150, -105 + (i * 7) % 14, 6, 5);
+    dx.fillStyle = PAINT.blue; dx.fillRect(-60, -48, 120, 40); dx.strokeRect(-60, -48, 120, 40);
+    for (const wx of [-46, 0, 46]) { dx.beginPath(); dx.arc(wx, 4, 16, 0, Math.PI * 2); dx.fillStyle = PAINT.black; dx.fill(); }
+    dx.restore();
+
+    // Blowing dust thickens as the panels and the storm get worse
+    if (!calm) {
+      const n = Math.round(12 + ds.dust * .35 + ds.sol * 2);
+      dx.fillStyle = PAINT.black;
+      for (let i = 0; i < n; i++) {
+        const s = streaks[i];
+        s.x -= s.v; if (s.x < -30) s.x = DW + 30;
+        dx.fillRect(s.x, s.y, 22, 4);
+      }
+    }
+
+    // Event banner, then the end stamp
+    if (banner && now - banner.t0 < 1900) {
+      const bx = DW - 596;
+      board(bx, 30, 560, 150, banner.color);
+      const ink = banner.color === PAINT.yellow ? PAINT.black : PAINT.enamel;
+      letter(banner.title, bx + 30, 106, 62, ink, banner.color === PAINT.yellow ? PAINT.red : PAINT.black);
+      dx.font = "500 32px 'Readex Pro', sans-serif"; dx.textAlign = "left"; dx.fillStyle = ink; dx.fillText(banner.sub, bx + 30, 154);
+    }
+    if (stamp) {
+      const p = calm ? 1 : Math.min(1, (now - stamp.t0) / 240), k = .8 + .2 * (1 - (1 - p) ** 3);
+      dx.save(); dx.translate(DW / 2, 250); dx.scale(k, k);
+      board(-400, -150, 800, stamp.stars ? 330 : 260, stamp.color);
+      letter(stamp.title, 0, -46, 92, PAINT.enamel, PAINT.black, "center");
+      dx.font = "500 38px 'Readex Pro', sans-serif"; dx.fillStyle = PAINT.enamel; dx.textAlign = "center"; dx.fillText(stamp.sub, 0, 16);
+      if (stamp.stars) for (let i = 0; i < 3; i++) star((i - 1) * 110, 100, 44, i < stamp.stars);
+      dx.restore();
+    }
+  }
+
+  function dsLoop(now) { requestAnimationFrame(dsLoop); if (current === DUST) dsDraw(now); }
+  document.querySelectorAll("[data-ds]").forEach(b => b.onclick = () => dsMove(b.dataset.ds));
+  $("ds-reset").onclick = dsReset;
+  dsReset();
+  requestAnimationFrame(dsLoop);
+
+  // ---------- Template copy ----------
+  const BLANK = [
+    "ONE-MINUTE GAME SPEC",
+    "1. Goal (one sentence):",
+    "2. Three variables (name, range, how it changes):",
+    "   - ",
+    "   - ",
+    "   - ",
+    "3. Two decisions (what the player trades):",
+    "   - ",
+    "   - ",
+    "4. Rule table (IF ... THEN ...):",
+    "   - ",
+    "5. End state (win and lose):",
+  ].join("\n");
+  $("copy-tpl").onclick = () => {
+    navigator.clipboard.writeText(BLANK)
+      .then(() => $("copy-msg").textContent = "Copied. Paste it in your team's shared doc.")
+      .catch(() => $("copy-msg").textContent = "Copy blocked by the browser. Teams can type the five headings.");
+  };
+
+  // ---------- Sprint clock ----------
+  const PHASES = [["Design", 20, "var(--blue)"], ["Swap", 10, "var(--yellow)"], ["Revise", 5, "var(--green)"]];
+  let phase = 0, left = 20 * 60, ticking = null;
+  function drawClock() {
+    $("clock").textContent = fmt(left).padStart(5, "0");
+    $("clock-start").textContent = ticking ? "Pause" : "Start";
+  }
+  function setPhase(p) {
+    clearInterval(ticking); ticking = null;
+    phase = p; left = PHASES[p][1] * 60;
+    $("clock-phase").textContent = PHASES[p][0];
+    const board = $("clock-board"), color = PHASES[p][2];
+    board.style.color = inkFor(color);
+    repaint(board, color);
+    drawClock();
+  }
+  $("clock-start").onclick = () => {
+    if (ticking) { clearInterval(ticking); ticking = null; }
+    else if (left > 0) ticking = setInterval(() => {
+      left--;
+      if (left <= 0) {
+        clearInterval(ticking); ticking = null;
+        $("clock-phase").textContent = phase < 2 ? `Time! Next: ${PHASES[phase + 1][0]}` : "Time! Pens down.";
+        $("clock-board").style.color = "var(--enamel)";
+        repaint($("clock-board"), "var(--red)");
+      }
+      drawClock();
+    }, 1000);
+    drawClock();
+  };
+  document.querySelectorAll("[data-phase]").forEach(b => b.onclick = () => setPhase(+b.dataset.phase));
+
+  // ---------- Start ----------
+  if (isPresenter) document.body.classList.add("presenter");
+  fit();
+  const start = parseInt(location.hash.slice(1), 10);
+  current = Number.isFinite(start) ? Math.max(0, Math.min(slides.length - 1, start - 1)) : 0;
+  show(current); // the talk clock starts on the first slide change, not on load
+})();
+</script>
+</body>
+</html>

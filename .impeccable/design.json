@@ -1,0 +1,274 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-10-29T15:43:28+00:00",
+  "title": "Design System: Game & Simulation Design for Space Apps",
+  "extensions": {
+    "colorMeta": {
+      "shop-red": {
+        "role": "primary",
+        "displayName": "Shop Red",
+        "canonical": "oklch(57% 0.21 29)",
+        "tonalRamp": [
+          "oklch(15% 0.079 29)",
+          "oklch(25% 0.131 29)",
+          "oklch(35% 0.184 29)",
+          "oklch(45% 0.21 29)",
+          "oklch(55% 0.21 29)",
+          "oklch(65% 0.163 29)",
+          "oklch(80% 0.093 29)",
+          "oklch(95% 0.023 29)"
+        ]
+      },
+      "chrome-yellow": {
+        "role": "secondary",
+        "displayName": "Chrome Yellow",
+        "canonical": "oklch(88% 0.18 92)",
+        "tonalRamp": [
+          "oklch(15% 0.068 92)",
+          "oklch(25% 0.112 92)",
+          "oklch(35% 0.158 92)",
+          "oklch(45% 0.18 92)",
+          "oklch(55% 0.18 92)",
+          "oklch(65% 0.14 92)",
+          "oklch(80% 0.08 92)",
+          "oklch(95% 0.02 92)"
+        ]
+      },
+      "bottle-green": {
+        "role": "tertiary",
+        "displayName": "Bottle Green",
+        "canonical": "oklch(52% 0.13 150)",
+        "tonalRamp": [
+          "oklch(15% 0.049 150)",
+          "oklch(25% 0.081 150)",
+          "oklch(35% 0.114 150)",
+          "oklch(45% 0.13 150)",
+          "oklch(55% 0.13 150)",
+          "oklch(65% 0.101 150)",
+          "oklch(80% 0.058 150)",
+          "oklch(95% 0.014 150)"
+        ]
+      },
+      "cobalt": {
+        "role": "tertiary",
+        "displayName": "Cobalt",
+        "canonical": "oklch(42% 0.16 262)",
+        "tonalRamp": [
+          "oklch(15% 0.06 262)",
+          "oklch(25% 0.1 262)",
+          "oklch(35% 0.14 262)",
+          "oklch(45% 0.16 262)",
+          "oklch(55% 0.16 262)",
+          "oklch(65% 0.124 262)",
+          "oklch(80% 0.071 262)",
+          "oklch(95% 0.018 262)"
+        ]
+      },
+      "sign-black": {
+        "role": "neutral",
+        "displayName": "Sign Black",
+        "canonical": "oklch(18% 0 0)",
+        "tonalRamp": [
+          "oklch(15% 0.0 0)",
+          "oklch(25% 0.0 0)",
+          "oklch(35% 0.0 0)",
+          "oklch(45% 0 0)",
+          "oklch(55% 0 0)",
+          "oklch(65% 0.0 0)",
+          "oklch(80% 0.0 0)",
+          "oklch(95% 0.0 0)"
+        ]
+      },
+      "enamel": {
+        "role": "neutral",
+        "displayName": "Enamel",
+        "canonical": "oklch(98% 0.004 106)",
+        "tonalRamp": [
+          "oklch(15% 0.002 106)",
+          "oklch(25% 0.003 106)",
+          "oklch(35% 0.004 106)",
+          "oklch(45% 0.004 106)",
+          "oklch(55% 0.004 106)",
+          "oklch(65% 0.003 106)",
+          "oklch(80% 0.002 106)",
+          "oklch(95% 0.0 106)"
+        ]
+      }
+    },
+    "typographyMeta": {
+      "display": {
+        "displayName": "Display",
+        "purpose": "Title slide only: the workshop title on the red fascia."
+      },
+      "headline": {
+        "displayName": "Headline",
+        "purpose": "One sign line per slide; larger and smaller steps for big numbers, winner names, the promise and board signs."
+      },
+      "title": {
+        "displayName": "Title",
+        "purpose": "Board heads."
+      },
+      "body": {
+        "displayName": "Body",
+        "purpose": "Board copy and lists; never below 34px on a board."
+      },
+      "label": {
+        "displayName": "Label",
+        "purpose": "Rail and 24px source lines."
+      }
+    },
+    "shadows": [
+      {
+        "name": "painted-drop-shade",
+        "value": ".045em .045em 0 var(--shade)",
+        "purpose": "Solid sign-painter text-shadow under all display lettering; shade is red or black only."
+      },
+      {
+        "name": "focus-halo",
+        "value": "0 0 0 9px #111111",
+        "purpose": "Black halo around the yellow focus outline so focus reads on any paint."
+      }
+    ],
+    "motion": [
+      {
+        "name": "repaint-wipe",
+        "value": "220ms cubic-bezier(.16,1,.3,1)",
+        "purpose": "A board repaints to its new state colour, wiping in from the left."
+      },
+      {
+        "name": "press",
+        "value": "120ms cubic-bezier(.2,.8,.2,1)",
+        "purpose": "Paint-button hover and 3px press."
+      },
+      {
+        "name": "loop-lift",
+        "value": "300ms cubic-bezier(.16,1,.3,1)",
+        "purpose": "Active core-loop board rises 14px."
+      }
+    ],
+    "breakpoints": [
+      {
+        "name": "stage",
+        "value": "1920x1080 fixed, scaled by min(innerWidth/1920, innerHeight/1080)"
+      }
+    ]
+  },
+  "components": [
+    {
+      "name": "Red Board",
+      "kind": "card",
+      "refersTo": "board-red",
+      "description": "Painted panel for failure, warning or the loudest claim.",
+      "html": "<div class=\"ds-board ds-board-red\"><h3>Decisions stick</h3><p>People remember what they chose.</p></div>",
+      "css": ".ds-board { position: relative; padding: 44px 52px; outline: 4px solid currentColor; outline-offset: -18px; display: flex; flex-direction: column; gap: 20px; font-family: 'Readex Pro', system-ui, sans-serif; } .ds-board-red { background: var(--red, #d7261e); color: var(--enamel, #fafaf7); } .ds-board h3 { font-family: Lalezar, 'Readex Pro', sans-serif; font-weight: 400; text-transform: uppercase; letter-spacing: .01em; font-size: 64px; line-height: 1.02; margin: 0; } .ds-board p { font-size: 42px; line-height: 1.28; margin: 0; }"
+    },
+    {
+      "name": "Yellow Board",
+      "kind": "card",
+      "refersTo": "board-yellow",
+      "description": "The takeaway or the one rule on a slide.",
+      "html": "<div class=\"ds-board ds-board-yellow\"><h3>Steal this</h3><p>Give the player less than they want.</p></div>",
+      "css": ".ds-board { position: relative; padding: 44px 52px; outline: 4px solid currentColor; outline-offset: -18px; display: flex; flex-direction: column; gap: 20px; font-family: 'Readex Pro', system-ui, sans-serif; } .ds-board-yellow { background: var(--yellow, #ffd100); color: var(--black, #111111); } .ds-board h3 { font-family: Lalezar, 'Readex Pro', sans-serif; font-weight: 400; text-transform: uppercase; letter-spacing: .01em; font-size: 64px; line-height: 1.02; margin: 0; } .ds-board p { font-size: 42px; line-height: 1.28; margin: 0; }"
+    },
+    {
+      "name": "White Board",
+      "kind": "card",
+      "refersTo": "board-white",
+      "description": "Enamel panel with a black border for lists and neutral claims.",
+      "html": "<div class=\"ds-board ds-board-white\"><h3>1 variable</h3><p>Too shallow. It's a quiz.</p></div>",
+      "css": ".ds-board { position: relative; padding: 44px 52px; outline: 4px solid currentColor; outline-offset: -18px; display: flex; flex-direction: column; gap: 20px; font-family: 'Readex Pro', system-ui, sans-serif; } .ds-board-white { background: var(--enamel, #fafaf7); color: var(--black, #111111); border: 6px solid var(--black, #111111); } .ds-board h3 { font-family: Lalezar, 'Readex Pro', sans-serif; font-weight: 400; text-transform: uppercase; letter-spacing: .01em; font-size: 64px; line-height: 1.02; margin: 0; } .ds-board p { font-size: 42px; line-height: 1.28; margin: 0; }"
+    },
+    {
+      "name": "Paint Button",
+      "kind": "button",
+      "refersTo": "paint-button",
+      "description": "Default action in live demos.",
+      "html": "<button class=\"ds-paint-btn\">Heat habitat</button>",
+      "css": ".ds-paint-btn { font-family: Lalezar, 'Readex Pro', sans-serif; font-weight: 400; text-transform: uppercase; letter-spacing: .01em; font-size: 40px; line-height: 1; padding: 22px 30px 18px; border: 5px solid var(--black, #111111); border-radius: 0; cursor: pointer; transition: transform 120ms cubic-bezier(.2,.8,.2,1), background-color 120ms; background: var(--enamel, #fafaf7); color: var(--black, #111111); } .ds-paint-btn:hover { background: var(--yellow, #ffd100); } .ds-paint-btn:active { transform: translateY(3px); } .ds-paint-btn:focus-visible { outline: 5px solid var(--yellow, #ffd100); outline-offset: 4px; box-shadow: 0 0 0 9px var(--black, #111111); }"
+    },
+    {
+      "name": "Solid Paint Button",
+      "kind": "button",
+      "refersTo": "paint-button-solid",
+      "description": "Commit or reset action.",
+      "html": "<button class=\"ds-paint-btn-solid\">Commit</button>",
+      "css": ".ds-paint-btn-solid { font-family: Lalezar, 'Readex Pro', sans-serif; font-weight: 400; text-transform: uppercase; letter-spacing: .01em; font-size: 40px; line-height: 1; padding: 22px 30px 18px; border: 5px solid var(--black, #111111); border-radius: 0; cursor: pointer; transition: transform 120ms cubic-bezier(.2,.8,.2,1), background-color 120ms; background: var(--black, #111111); color: var(--enamel, #fafaf7); } .ds-paint-btn-solid:hover { background: var(--red, #d7261e); } .ds-paint-btn-solid:active { transform: translateY(3px); } .ds-paint-btn-solid:focus-visible { outline: 5px solid var(--yellow, #ffd100); outline-offset: 4px; box-shadow: 0 0 0 9px var(--black, #111111); }"
+    },
+    {
+      "name": "Meter",
+      "kind": "custom",
+      "description": "State meter; the fill repaints green, yellow or red.",
+      "html": "<div class=\"ds-meter\"><span>Oxygen</span><div class=\"ds-track\"><div class=\"ds-fill\"></div></div><b>60</b></div>",
+      "css": ".ds-meter { display: grid; grid-template-columns: 230px 1fr 110px; align-items: center; gap: 20px; font: 500 34px 'Readex Pro', sans-serif; color: var(--black, #111111); } .ds-track { height: 44px; background: var(--enamel, #fafaf7); border: 5px solid var(--black, #111111); position: relative; } .ds-fill { position: absolute; inset: 0 auto 0 0; width: 60%; background: var(--green, #0a7d3b); transition: width 220ms cubic-bezier(.16,1,.3,1), background-color 220ms; } .ds-meter b { font-weight: 650; text-align: right; font-variant-numeric: tabular-nums; }"
+    },
+    {
+      "name": "Rail",
+      "kind": "nav",
+      "refersTo": "rail",
+      "description": "Fixed bottom strip: presenter, section chip and name, clock and count.",
+      "html": "<div class=\"ds-rail\"><span>Marwan Ayyad · Space Apps Cairo</span><span class=\"ds-sec\"><i class=\"ds-chip\"></i>II · The core loop · 20 min</span><span class=\"ds-right\">12:04 <b>12 / 28</b></span></div>",
+      "css": ".ds-rail { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 24px; height: 76px; padding: 0 32px; background: var(--enamel, #fafaf7); color: var(--black, #111111); border-top: 6px solid var(--black, #111111); font: 500 26px 'Readex Pro', sans-serif; } .ds-sec { display: flex; align-items: center; gap: 14px; font-family: Lalezar, 'Readex Pro', sans-serif; font-weight: 400; text-transform: uppercase; letter-spacing: .01em; font-size: 32px; } .ds-chip { width: 30px; height: 30px; border: 4px solid var(--black, #111111); background: var(--blue, #1846a3); } .ds-right { justify-self: end; display: flex; gap: 28px; font-variant-numeric: tabular-nums; }"
+    },
+    {
+      "name": "Sign Line",
+      "kind": "custom",
+      "description": "Slide headline: painted caps with a hard drop-shade.",
+      "html": "<p class=\"ds-sign\">Keep it to 2–4 variables</p>",
+      "css": ".ds-sign { font-family: Lalezar, 'Readex Pro', sans-serif; font-weight: 400; text-transform: uppercase; letter-spacing: .01em; font-size: 92px; line-height: 1.02; color: var(--black, #111111); text-shadow: .045em .045em 0 var(--red, #d7261e); text-wrap: balance; margin: 0; }"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Cairo Sign-Painter",
+    "overview": "Every slide is a hand-painted shop sign on a white enamel ground. Each one carries one message, painted big enough to read from across a street, or from the back row of a lit workshop room through a weak projector. Whole regions are flat sign paint: six colours, no tints, gradients or glow. Lettering is bold display caps with a solid painted drop-shade. Reading text is a calm, wide sans.\n\nThe sign frame never moves. A black border and a white rail along the bottom stay fixed, and only the slide inside changes. Content sits at the top of each board, and boards end where their content ends. That leaves the enamel ground showing below, as on a real sign, instead of half-empty coloured panels. Interaction belongs to the same world: a choice \"repaints\" a board to its new state in one quick wipe.\n\nThe deck rejects the category default of dark space HUDs with glowing cyan chrome, and the white corporate bullet slide.",
+    "keyCharacteristics": [
+      "Six flat paints on white enamel, nothing else.",
+      "Lalezar uppercase lettering with a hard painted drop-shade.",
+      "Painted pinstripe inset on every board.",
+      "Fixed 1920×1080 frame, scaled to fit any projector.",
+      "One message per board, top-aligned."
+    ],
+    "rules": [
+      {
+        "name": "The Ink Budget Rule",
+        "body": "Six paints, nothing else. No tints, opacity washes, gradients or glow. A new state is a different paint, never a lighter one.",
+        "section": "colors"
+      },
+      {
+        "name": "The Shade Contrast Rule",
+        "body": "Drop-shades are only red or black: red under black lettering, black under light lettering, red under light lettering on black paint. Never shade with enamel or yellow; on a projector it disappears.",
+        "section": "colors"
+      },
+      {
+        "name": "The Painted Caps Rule",
+        "body": "All display lettering is uppercase Lalezar with letter-spacing: .01em, balanced line breaks, and a solid drop-shade offset .045em down and right. Reading text is never uppercase.",
+        "section": "typography"
+      },
+      {
+        "name": "The Back-Row Rule",
+        "body": "No reading text below 24px at 1920×1080, and that size is kept for source lines and labels. Board copy starts at 34px.",
+        "section": "typography"
+      },
+      {
+        "name": "The Flat Paint Rule",
+        "body": "If it looks lifted, it is wrong. Separation comes from a different paint, a black seam, or the pinstripe. Never a shadow.",
+        "section": "elevation"
+      }
+    ],
+    "dos": [
+      "Do give every slide one headline sign and at most four boards.",
+      "Do top-align board content and let the row end at its tallest board.",
+      "Do use the six paints as solid fields, with state colours fixed: green safe, yellow warning, red failure.",
+      "Do put a source line (24px) under every real-world fact, and label demo numbers as teaching numbers.",
+      "Do keep the frame and rail fixed; only the slide inside changes.",
+      "Do self-host fonts and assets; the deck runs offline."
+    ],
+    "donts": [
+      "Don't add tints, gradients, glows, blur or box shadows.",
+      "Don't shade lettering with enamel or yellow.",
+      "Don't place kickers or eyebrow labels above headings. Section labels live in the rail.",
+      "Don't round corners.",
+      "Don't vertically centre text inside a board that shares a row with others.",
+      "Don't use emoji or icon-font glyphs; draw icons as painted inline SVG."
+    ]
+  }
+}

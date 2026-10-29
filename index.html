@@ -66,7 +66,6 @@ p, li { font-size: 38px; line-height: 1.32; font-weight: 400; text-wrap: pretty;
 .lead { font-size: 46px; line-height: 1.25; font-weight: 500; max-width: 30ch; }
 .small { font-size: 28px; line-height: 1.35; }
 b, strong { font-weight: 650; }
-.ar { font-family: var(--display); direction: rtl; }
 
 /* Painted boards with a pinstripe inset */
 .board {
@@ -168,7 +167,6 @@ ul.plain li::before { content: ""; position: absolute; left: 0; top: .5em; width
 /* ---- Slide-specific ---- */
 .title-slide { grid-template-rows: 1fr auto; padding: 0; gap: 0; }
 .title-slide .fascia { padding: 70px 84px 60px; outline-offset: -26px; justify-content: flex-end; }
-.title-slide .ar { font-size: 64px; color: var(--yellow); margin-top: 8px; }
 .title-slide .under { display: grid; grid-template-columns: 1.55fr 1fr; }
 .title-slide .under .board { padding: 40px 56px; }
 
@@ -326,11 +324,10 @@ body.presenter #presenter { display: grid; grid-template-columns: 2fr 1fr; gap: 
 <section class="slide title-slide" data-section="1" data-title="Title" data-notes="Doors open. Let this sit while people sit down. Start: 'In two hours, every team in this room leaves with a spec for a game they can build this weekend.' [0:00]">
   <div class="board red fascia on-paint">
     <h1 class="sign xl">Game &amp; Simulation Design<br>for Space Apps</h1>
-    <p class="ar" lang="ar">تصميم الألعاب والمحاكاة</p>
   </div>
   <div class="under">
     <div class="board yellow"><p class="sign promise">Leave with a playable spec.</p><p class="small">A 2-hour workshop · NASA Space Apps Cairo 2026</p></div>
-    <div class="board blue"><h2 class="host">Marwan Ayyad</h2><p class="small">Game designer · your host for the next 120 minutes</p></div>
+    <div class="board blue"><h2 class="host">Marwan Ayyad</h2><p class="small">Your host for the next 120 minutes</p></div>
   </div>
 </section>
 

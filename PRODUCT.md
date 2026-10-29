@@ -22,7 +22,7 @@ A 2-hour keynote and hands-on workshop, "Game & Simulation Design for Space Apps
 
 ## Positioning
 
-Taught by a game designer, not a data-viz person: the claim is that a dashboard shows data while a simulation lets players make choices with consequences driven by that data. Every concept is shown working live in the deck itself (playable sandbox, constraint simulator, Dust Storm Dispatch rover game) rather than described.
+The claim is that a dashboard shows data while a simulation lets players make choices with consequences driven by that data. Every concept is shown working live in the deck itself (playable sandbox, constraint simulator, Dust Storm Dispatch rover game) rather than described.
 
 ## Operating Context
 

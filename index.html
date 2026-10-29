@@ -271,6 +271,7 @@ ul.plain li::before { content: ""; position: absolute; left: 0; top: .5em; width
 .template .board p, .template .board li { font-size: 33px; line-height: 1.25; }
 .template .board h3 { font-size: 46px; margin-top: 6px; }
 .template ul.plain { gap: 6px; }
+.board .prompt { font-size: 34px; line-height: 1.3; border-left: 10px solid var(--yellow); padding-left: 22px; }
 .dense .board { padding: 36px 44px; gap: 16px; }
 .dense .board h3 { font-size: 54px; }
 .dense .board p { font-size: 34px; }
@@ -642,7 +643,7 @@ body.presenter #presenter { display: grid; grid-template-columns: 2fr 1fr; gap: 
   <div class="board yellow" style="padding: 30px 52px;"><p class="sign md">Instead: one screen, one loop, one finished level.</p></div>
 </section>
 
-<section class="slide pair" data-section="4" data-title="The winning stack" style="grid-template-rows: auto auto; align-content: start;" data-notes="Pick the tool your team already knows. Browser is fastest to share with judges. Skip project-management tools: one shared doc with your variables and rules is enough. [50:00]">
+<section class="slide pair" data-section="4" data-title="The winning stack" style="grid-template-rows: auto auto; align-content: start;" data-notes="Pick the tool your team already knows. Browser is fastest to share with judges. Skip project-management tools: one shared doc with your variables and rules is enough. [48:00]">
   <h2 class="sign">Use the tool you already know</h2>
   <div class="board white" style="margin-right: 48px;">
     <h3>Good picks for 48 hours</h3>
@@ -660,7 +661,7 @@ body.presenter #presenter { display: grid; grid-template-columns: 2fr 1fr; gap: 
   </div>
 </section>
 
-<section class="slide pair" data-section="4" data-title="AI as your copilot" data-notes="AI is a force multiplier for code and placeholder art. It's dangerous for science: it will invent numbers confidently. Every number in your rules must trace back to a NASA source. [55:00]">
+<section class="slide pair" data-section="4" data-title="AI as your copilot" data-notes="AI is a force multiplier for code and placeholder art. It's dangerous for science: it will invent numbers confidently. Every number in your rules must trace back to a NASA source. [51:00]">
   <h2 class="sign">AI: a fast copilot, a bad scientist</h2>
   <div class="board green" style="margin-right: 48px;">
     <h3>Use AI for</h3>
@@ -678,6 +679,30 @@ body.presenter #presenter { display: grid; grid-template-columns: 2fr 1fr; gap: 
       <li>Numbers you can't trace to a NASA source</li>
     </ul>
     <p><b>Check every number it gives you.</b></p>
+  </div>
+</section>
+
+<section class="slide pair" data-section="4" data-title="Prototype with AI" data-notes="Six minutes. The spec they write later becomes the prompt. Walk the loop top to bottom: paste the spec, save the reply as game.html, double-click it, play one minute, then ask for one change at a time. Stress two habits: paste the exact error message, and save every version that works so a bad answer never costs them the game. Press Copy full prompt and drop it in the event channel. Safety, out loud: never paste passwords, keys or personal details, and follow the event's AI rules. [54:00]">
+  <h2 class="sign" style="--shade: var(--green)">Spec in, playable draft out</h2>
+  <div class="board blue" style="margin-right: 48px;">
+    <h3>The AI prototype loop</h3>
+    <ul class="plain">
+      <li><b>Paste</b> your spec after the prompt</li>
+      <li><b>Save</b> the reply as game.html, double-click it</li>
+      <li><b>Play</b> one minute: does the choice matter?</li>
+      <li><b>Ask</b> for one change at a time; paste errors exactly</li>
+      <li><b>Keep</b> every version that works</li>
+    </ul>
+  </div>
+  <div class="seam"></div>
+  <div class="board white" style="margin-left: 48px;">
+    <h3>Prompt starter</h3>
+    <p class="prompt">"Build one HTML file that runs offline. Use only the rules in my spec; ask before inventing numbers. One button per decision, green-yellow-red meters, show every change in numbers."</p>
+    <div class="btn-row" style="align-items: center;">
+      <button class="paint-btn solid" id="copy-ai">Copy full prompt</button>
+      <span class="small" id="copy-ai-msg" role="status"></span>
+    </div>
+    <p class="small" style="font-size: 28px;"><b>Never paste</b> passwords, keys or personal details. Follow your event's AI rules and say what AI made.</p>
   </div>
 </section>
 
@@ -716,7 +741,7 @@ body.presenter #presenter { display: grid; grid-template-columns: 2fr 1fr; gap: 
 
 <section class="slide" data-section="6" data-title="Your turn" style="grid-template-rows: auto auto 1fr;" data-notes="Section VI, 35 minutes. Form teams now. 20 minutes design, 10 minutes swap, 5 minutes revise. In the swap, the other team plays your rules on paper, no code. [75:00]">
   <h2 class="sign" style="--shade: var(--blue)">Your turn: design a one-minute game</h2>
-  <p class="lead" style="max-width: none;">Pick any NASA challenge. Your team writes one spec.</p>
+  <p class="lead" style="max-width: none;">Pick any NASA challenge. Your team writes one spec. Tonight, AI turns it into a playable draft.</p>
   <div class="cols-3">
     <div class="board blue"><p class="sign lg">20 min</p><h3>Design</h3><p>Fill in the template on the next slide.</p></div>
     <div class="board yellow"><p class="sign lg">10 min</p><h3>Swap</h3><p>Trade specs with the next team. They play your rules on paper.</p></div>
@@ -740,6 +765,7 @@ body.presenter #presenter { display: grid; grid-template-columns: 2fr 1fr; gap: 
   </div>
   <div class="btn-row" style="grid-column: 1 / -1; align-items: center;">
     <button class="paint-btn solid" id="copy-tpl">Copy blank template</button>
+    <button class="paint-btn" id="copy-tpl-ai">Copy as AI prompt</button>
     <span class="small" id="copy-msg" role="status"></span>
   </div>
 </section>
@@ -1894,11 +1920,25 @@ body.presenter #presenter { display: grid; grid-template-columns: 2fr 1fr; gap: 
     "   - ",
     "5. End state (win and lose):",
   ].join("\n");
-  $("copy-tpl").onclick = () => {
-    navigator.clipboard.writeText(BLANK)
-      .then(() => $("copy-msg").textContent = "Copied. Paste it in your team's shared doc.")
-      .catch(() => $("copy-msg").textContent = "Copy blocked by the browser. Teams can type the five headings.");
-  };
+  // The prompt that turns a spec into a first playable draft (slides "Prototype with AI" and the template)
+  const AI_PROMPT = [
+    "You are helping a team of first-time game makers at NASA Space Apps build a prototype.",
+    "Build ONE self-contained HTML file (HTML, CSS and JavaScript, no libraries, no internet) that runs by double-clicking it.",
+    "Use exactly the goal, variables, decisions and rules in my spec below. Do not invent science or numbers: if something is missing, ask me before you write code.",
+    "Show each variable as a big meter: green when safe, yellow as a warning, red when critical.",
+    "Give the player one button per decision. After each click, show what changed in numbers (for example \"oxygen -20\").",
+    "Show a clear win or lose screen and a Restart button.",
+    "Keep the code short, with a comment above each rule.",
+    "After the code, list the rules you built in plain English so we can check them against the spec.",
+    "",
+    "MY SPEC:",
+  ].join("\n");
+  const copy = (text, msg, done) => navigator.clipboard.writeText(text)
+    .then(() => $(msg).textContent = done)
+    .catch(() => $(msg).textContent = "Copy blocked by the browser. Type it from the slide instead.");
+  $("copy-tpl").onclick = () => copy(BLANK, "copy-msg", "Copied. Paste it in your team's shared doc.");
+  $("copy-tpl-ai").onclick = () => copy(`${AI_PROMPT}\n${BLANK}`, "copy-msg", "Copied. Fill in the spec, then paste it into an AI chat.");
+  $("copy-ai").onclick = () => copy(`${AI_PROMPT}\n[paste your one-minute spec here]`, "copy-ai-msg", "Copied.");
 
   // ---------- Sprint clock ----------
   const PHASES = [["Design", 20, "var(--blue)"], ["Swap", 10, "var(--yellow)"], ["Revise", 5, "var(--green)"]];

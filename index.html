@@ -152,6 +152,27 @@ ul.plain li::before { content: ""; position: absolute; left: 0; top: .5em; width
 #rail .right { justify-self: end; display: flex; gap: 28px; font-variant-numeric: tabular-nums; }
 #rail .count { font-weight: 650; }
 
+/* Touch controls: phones and tablets have no arrow keys, so a bar under the stage steps the deck */
+#touch-nav { display: none; }
+@media (pointer: coarse) {
+  #touch-nav {
+    position: fixed; left: 0; right: 0; bottom: 0; z-index: 30;
+    display: grid; grid-template-columns: 1fr auto 1fr; gap: 8px;
+    padding: 8px max(8px, env(safe-area-inset-right)) max(8px, env(safe-area-inset-bottom)) max(8px, env(safe-area-inset-left));
+    background: var(--black);
+  }
+  #touch-nav button {
+    min-height: 48px; padding: 0 16px;
+    font-family: var(--display); font-size: 22px; line-height: 1; padding-top: 3px;
+    background: var(--enamel); color: var(--black); border: 3px solid var(--enamel);
+    touch-action: manipulation; -webkit-tap-highlight-color: transparent;
+  }
+  #touch-nav button:active { background: var(--yellow); border-color: var(--yellow); }
+  #touch-nav button[disabled] { opacity: .35; }
+  #touch-nav #tn-count { background: var(--black); color: var(--enamel); font-family: var(--text); font-weight: 650; font-variant-numeric: tabular-nums; min-width: 96px; }
+  body.presenter #touch-nav { display: none; }
+}
+
 /* Overlays: notes and grid (presenter tools) */
 .overlay { position: absolute; z-index: 20; display: none; }
 .overlay.open { display: block; }
@@ -872,6 +893,12 @@ body.presenter #presenter { display: grid; grid-template-columns: 2fr 1fr; gap: 
 </footer>
 </div>
 
+<nav id="touch-nav" aria-label="Slide controls">
+  <button id="tn-prev" aria-label="Previous slide">‹ Back</button>
+  <button id="tn-count" title="All slides" aria-haspopup="dialog"></button>
+  <button id="tn-next" aria-label="Next slide">Next ›</button>
+</nav>
+
 <div id="presenter" aria-live="polite">
   <div>
     <h1 id="p-title"></h1>
@@ -933,6 +960,9 @@ body.presenter #presenter { display: grid; grid-template-columns: 2fr 1fr; gap: 
     $("rail-sec").textContent = `${sec.name} · ${sec.min} min`;
     $("rail-chip").style.background = sec.color;
     $("rail-count").textContent = `${String(i + 1).padStart(2, "0")} / ${slides.length}`;
+    $("tn-count").textContent = `${i + 1} / ${slides.length}`;
+    $("tn-prev").disabled = i === 0;
+    $("tn-next").disabled = i === slides.length - 1;
     $("notes-text").textContent = s.dataset.notes;
     document.querySelectorAll("#grid-list button").forEach((b, n) => b.setAttribute("aria-current", n === i));
     if (location.hash !== `#${i + 1}`) history.replaceState(null, "", `#${i + 1}`);
@@ -994,8 +1024,26 @@ body.presenter #presenter { display: grid; grid-template-columns: 2fr 1fr; gap: 
     }
   });
 
+  // Touch: buttons in the bar, and a horizontal swipe on the slide (games and sliders keep their own drags)
+  $("tn-prev").onclick = () => show(current - 1);
+  $("tn-next").onclick = () => show(current + 1);
+  $("tn-count").onclick = () => toggle("grid");
+  let swipe = null;
+  $("stage").addEventListener("touchstart", e => {
+    const t = e.touches[0];
+    swipe = e.touches.length === 1 && !e.target.closest("canvas, input, textarea, button, .overlay.open") ? { x: t.clientX, y: t.clientY } : null;
+  }, { passive: true });
+  $("stage").addEventListener("touchend", e => {
+    if (!swipe) return;
+    const t = e.changedTouches[0], dx = t.clientX - swipe.x, dy = t.clientY - swipe.y;
+    swipe = null;
+    if (Math.abs(dx) > 50 && Math.abs(dx) > Math.abs(dy) * 1.5) show(current + (dx < 0 ? 1 : -1));
+  }, { passive: true });
+
   function fit() {
-    const scale = Math.min(innerWidth / 1920, innerHeight / 1080);
+    const bar = $("touch-nav").offsetHeight;
+    document.body.style.paddingBottom = bar ? `${bar}px` : "";
+    const scale = Math.min(innerWidth / 1920, (innerHeight - bar) / 1080);
     $("stage").style.transform = `scale(${scale})`;
   }
   addEventListener("resize", fit);

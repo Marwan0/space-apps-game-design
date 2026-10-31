@@ -53,6 +53,7 @@ Past-winner slides only state what NASA's 2024 and 2025 global-winner announceme
 - `vendor/fonts/`: Lalezar and Readex Pro (SIL Open Font License, licenses alongside)
 - `vendor/three.min.js`: three.js r149 for the slide 10 and 13 scenes (MIT, license alongside)
 - `vendor/qr-links.svg`: QR code for https://marwan0.github.io (slide 30)
+- `vendor/qr-discord.svg`: QR code for the workshop Discord invite https://discord.gg/fycj8nKgKE (slide 30; invite set to never expire)
 - `vendor/qr-bloodtax.svg`: QR code for the BLOOD TAX how-to-play video (slide 31)
 - `vendor/qr-zumorroda.svg`, `qr-terratales.svg`, `qr-ecometropolis.svg`, `qr-pureflow.svg`: QR codes on slides 15–18 to each winner's game or official Space Apps project page. The QR and the link on the slide point to the same URL; change both together
 - `links/`: source of that links page, its own git repo pushed to github.com/Marwan0/Marwan0.github.io. Edit, commit and push there; GitHub Pages republishes in about a minute
